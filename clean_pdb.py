@@ -3,26 +3,15 @@
 #clean anything that is not CA
 #return CA coordinates.
 import numpy as np
+from readpdb import coord
 
+#left from old list method. Might be useful in somewhere just leave it 
+#aa=['ALA','HIS','ILE','LEU','LYS','MET','PHE','PRO','THR','TYR','VAL','GLU','ASN','ARG','GLY','CYS','SER','TRP','ASP','GLN']
+#daa=['A'+i for i in aa]
 
-aa=['ALA','HIS','ILE','LEU','LYS','MET','PHE','PRO','THR','TYR','VAL','GLU','ASN','ARG','GLY','CYS','SER','TRP','ASP','GLN']
-daa=['A'+i for i in aa]
-
-def getca(pdb):
-    calines=[]
-    seenresid=[]
-    for line in pdb:
-            if line.startswith('ATOM') and 'CA' in line:
-                resid=line[22:26].strip()
-                ch=line[20:21].strip()
-                if [ch,resid] not in seenresid:
-                    seenresid.append([ch,resid])
-                    calines.append(line)
-                else:
-                    print 'Identifiied multiple confomers for residue %s . Continuing with the first confomer' %(resid)
-    for ca in calines:
-        for rep in daa:
-            if rep in ca:
-                calines[calines.index(ca)]=ca.replace(rep,' '+aa[daa.index(rep)])
-    return calines
-
+def getca(pdb,pdbid,mer):
+    crdarray=coord(pdb,pdbid,mer)
+    delalter=crdarray[np.in1d(crdarray['altloc'],'B',invert=True)]
+    print 'Cleaning alternative location B if present'
+    print 'Currently no support is provided for chosing a different alternative location'
+    return delalter[np.in1d(delalter['atname'],'CA')]
