@@ -1,6 +1,6 @@
 #This is the main script where we call
 from subprocess import call
-from get_missing import *
+from readpdb import *
 from clean_pdb import *
 from alignment import *
 import argparse
