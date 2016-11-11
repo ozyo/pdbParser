@@ -59,7 +59,7 @@ def pdbParser(pdb,pdbid,mer,file):
     r465=readremark(pdb,compnd)
     seq=readseq(pdb,compnd)
     missing=missinginfo(r465,seq,ca)
-    if mer is not False:
+    if mer is not False and len(compnd) > mer:
         div=divide_mer(ca,compnd,mer,missing)
         writeca(div,file)
     else:
