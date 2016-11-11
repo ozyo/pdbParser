@@ -43,6 +43,8 @@ def pdbParser(pdb,pdbid,mer):
         elif mer > len(compnd):
             logging.warning("Structure contains less chains then the supplied multimeric option. Assuming not complete structure, please provide your own input files")
             exit()
+        elif mer == len(compnd):
+            pass
     logging.info('Checking for missing residues')
     logging.info('Retriving CA coordinates')
     atomlines=readatom(pdb)
@@ -52,6 +54,9 @@ def pdbParser(pdb,pdbid,mer):
         div=divide_mer(ca,compnd,mer)
     else:
         div=ca
+    r465=
+
+
 if args.local is True:
     sca=getca(open(args.start[0]).readlines())
     eca=getca(open(args.end[0]).readlines())
@@ -63,24 +68,9 @@ else:
     end=getpdb(eid)
     logging.info('Processing PDB files')
     
-
-#identify missing residues
-#Needs two routines, one from PDB Header and the other one from sequence when Header is not possible 
-
 if args.local is True:
     logging.info('Moving to eBDIMS calculations')
 else:
     pdbParser(start,sid,args.mer)
-    #pdbParser(end,eid,args.mer)
+    pdbParser(end,eid,args.mer)
     logging.info('Checking for missing residues')
-#create sequences from CA 
-#We still have a problem of multiple confomers. They are not present in the file but we have not renamed them either. So the shell script below requires more lines to replace them.
-#     call(['./check_seq.sh end.pdb'],shell=True)
-#     call(['./check_seq.sh start.pdb'],shell=True)
-#     eseq=open('end.seq','r').readlines()[0].strip()
-#     sseq=open('start.seq','r').readlines()[0].strip()
-#Grab CA and create an alignment
-#     align(eseq,sseq)
-#Check for misaligned regions, report any residue mismatch.
-
-#Pass the inputs as start.pdb and end.pdb to the eBDIMS

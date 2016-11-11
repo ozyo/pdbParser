@@ -7,7 +7,7 @@ def getpdb(pdbid):
     url='http://files.rcsb.org/view/%s.pdb' %pdbid
     return urlopen(url).readlines()
 
-def readcompnd(pdb,pdbid):
+def readcompnd(pdb):
     compnd=None
     read=False
     for line in pdb:
@@ -29,6 +29,19 @@ def readmissing(pdb,compnd):
     r465=np.genfromtxt(remark[7:-1],names=['REMARK','465','rname','ch','rid'],dtype=['S6',int,'S3','S1',int])
     filt=r465[np.in1d(r465['ch'],compnd)]
     return filt
+
+def readseq(pdb,compnd):
+    seqres={}
+    for ch in compnd:
+        seqres[ch]=[]
+    read=False
+    for line in pdb:
+        if 'SEQRES' in line:
+            ch=line[11]
+            if ch in compnd:
+                seq=line[19:-1].split()
+                seqres[ch]=seqres[ch]+seq
+    return seqres
 
 def readatom(pdb):
     atoms=[]

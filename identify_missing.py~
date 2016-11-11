@@ -1,0 +1,62 @@
+import os, argparse, itertools, operator
+parser = argparse.ArgumentParser(description='Identification of Missing residues')
+#This should be a redirect from getpdb.sh command, but for now this will do
+parser.add_argument('--pdb1', metavar='Path to pdb file', nargs=1 , help='Crystal structure from PDB database with the header')
+parser.add_argument('--pdb2', metavar='Path to pdb file', nargs=1 , help='Crystal structure from PDB database with the header')
+#maybe it is a good idea to have a fixed name for this. Users can rename it themselves later if they want. Tag should be PDBID_fix
+
+parser.add_argument('--multimeric', metavar='Provide how many chains are present in this protein', nargs=1, help='If the protein is multimeric provide the number of mers.')
+
+args=parser.parse_args()
+pdb1=open(args.pdb1[0]).readlines()
+pdb2=open(args.pdb2[0]).readlines()
+
+def get_missing(pdb):
+    misres=[]
+    misatom=[]
+    missing_res=False
+    missing_atm=False
+    for line in pdb:
+        if "REMARK" in line:
+            if "465" in line:
+                missing_res=True
+            else:
+                missing_res=False
+            if missing_res is True:
+                try:
+                    ch=line.split(' ',8)[7].strip()
+                    res=line.split(' ',8)[8].strip()
+                    if len(res) == 3:
+                        tofix=(ch,res)
+                        misres.append(tofix)
+                except IndexError:
+                    pass
+    misres_sort_ch=sorted((list(group) for key,group in itertools.groupby(misres,operator.itemgetter(0))),key=operator.itemgetter(2))
+#A complex generator. The first argument argument in sorted groups the misssing residues list by its chain, and creates a sublist. This sublist is then passed to sort to be sorted based on the resid. This is to ensure we create residue ranges for modelling.
+# In theory it should be sorted but you cannot be too careful when it comes to pdb files.
+    for chain in misres_sort_ch:
+        res_list=[]
+        for pair in range(0,len(chain)):
+            res_list.append(chain[pair][1])
+    ch_nr=len(misres_sort_ch)
+
+    return misres_sort_ch, res_list, ch_nr
+
+data_pdb1=get_missing(pdb1)
+data_pdb2=get_missing(pdb2)
+
+
+misres1=data_pdb1[0]
+res_list1=data_pdb1[1]
+ch_nr1=data_pdb1[2]
+
+misres2=data_pdb2[0]
+res_list2=data_pdb2[1]
+ch_nr2=data_pdb2[2]
+
+print 'There are %s chains in this pdb file. If multimeric option was not chosen  we will use treat all chains as a seperate structure.' % (ch_nr1)
+
+if len(misres1) != 0 or len(misres2) !=0:
+    print 'Missing residues halting... Please provide a pdb file that is fixed, an example modeller script to fix broken molecules can be found :...'
+    print misres1
+    print misres2

@@ -2,9 +2,7 @@
 #
 import numpy as np
 
-def divide_mer(coord,compnd,mer):
+def divide_mer(ca,compnd,mer):
     slice=len(compnd) / mer
-    divide_mer=np.array_split(coord,slice)
-    print divide_mer[-1]['ch']
+    divide_mer=np.array_split(ca,slice)
     return divide_mer[0]
-
