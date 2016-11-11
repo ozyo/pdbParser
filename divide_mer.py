@@ -16,8 +16,10 @@ def divide_mer(ca,compnd,mer,missinginfo):
         if bainfo==mer:
             batouse.append(ba)
             continue
-        else:
-            logging.info('All the assemblies are broken')
-    divide_mer=np.array_split(ca,slice)[batouse[0]]
-    logging.info('I will continue with the %i biological assembly' %(batouse[0]+1))
-    return divide_mer
+    if len(batouse) == 0:
+        logging.warning('All the assemblies are broken. Provide your own input files')
+        exit()
+    else:
+        divide_mer=np.array_split(ca,slice)[batouse[0]]
+        logging.info('I will continue with the %i biological assembly' %(batouse[0]+1))
+        return divide_mer
