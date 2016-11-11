@@ -7,6 +7,7 @@ from readpdb import *
 from clean_pdb import *
 from divide_mer import *
 from missing import *
+from writepdb import *
 #from alignment import *
 import argparse
 import logging
@@ -26,7 +27,7 @@ args=parser.parse_args()
 sid=args.start[0]
 eid=args.end[0]
 
-def pdbParser(pdb,pdbid,mer):
+def pdbParser(pdb,pdbid,mer,file):
     print pdbid
     compnd=readcompnd(pdb)
     logging.info('Detected chains for %s are ' % (pdbid)+' '.join(i for i in compnd))
@@ -60,8 +61,10 @@ def pdbParser(pdb,pdbid,mer):
     missing=missinginfo(r465,seq,ca)
     if mer is not False:
         div=divide_mer(ca,compnd,mer,missing)
+        writeca(div,file)
     else:
         div=ca
+        writeca(div,file)
 
 if args.local is True:
     sca=getca(open(args.start[0]).readlines())
@@ -77,6 +80,6 @@ else:
 if args.local is True:
     logging.info('Moving to eBDIMS calculations')
 else:
-    pdbParser(start,sid,args.mer)
-    pdbParser(end,eid,args.mer)
+    pdbParser(start,sid,args.mer,'start.pdb')
+    pdbParser(end,eid,args.mer,'end.pdb')
     logging.info('Checking for missing residues')
