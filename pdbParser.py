@@ -1,3 +1,6 @@
+###DEAL with the license options laters!!!!
+
+
 #This is the main script where we call
 from urllib2 import urlopen
 from readpdb import *
