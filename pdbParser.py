@@ -58,13 +58,10 @@ def pdbParser(pdb,pdbid,mer):
     r465=readremark(pdb,compnd)
     seq=readseq(pdb,compnd)
     missing=missinginfo(r465,seq,ca)
-    print missing
     if mer is not False:
-        div=divide_mer(ca,compnd,mer)
+        div=divide_mer(ca,compnd,mer,missing)
     else:
         div=ca
-
-
 
 if args.local is True:
     sca=getca(open(args.start[0]).readlines())
