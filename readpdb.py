@@ -20,7 +20,7 @@ def readcompnd(pdb):
                 compnd=[i.strip().strip(';') for i in line.split(':')[1].split(',')]
     return compnd
 
-def readmissing(pdb,compnd):
+def readremark(pdb,compnd):
     remark=[]
     read=False
     for line in pdb:

@@ -3,6 +3,7 @@ from urllib2 import urlopen
 from readpdb import *
 from clean_pdb import *
 from divide_mer import *
+from missing import *
 #from alignment import *
 import argparse
 import logging
@@ -24,7 +25,7 @@ eid=args.end[0]
 
 def pdbParser(pdb,pdbid,mer):
     print pdbid
-    compnd=readcompnd(pdb,pdbid)
+    compnd=readcompnd(pdb)
     logging.info('Detected chains for %s are ' % (pdbid)+' '.join(i for i in compnd))
     if len(compnd) is not 1:
         logging.info('If multimeric option not chosen continuing with the chain %s' %(compnd[0]))
@@ -50,11 +51,16 @@ def pdbParser(pdb,pdbid,mer):
     atomlines=readatom(pdb)
     coords=coord(atomlines,compnd)
     ca=getca(coords,compnd)
+    #This is the part where we check the missing residues. I have a feeling we should do this before. But if we want a sequence alignment between two structure and retrive a region automatically for eBDIMS then doing it after is better so that we can also use the remarks and seqres to chop and align the sequences.
+    r465=readremark(pdb,compnd)
+    seq=readseq(pdb,compnd)
+    missing=missinginfo(r465,seq,ca)
+    print missing
     if mer is not False:
         div=divide_mer(ca,compnd,mer)
     else:
         div=ca
-    r465=
+
 
 
 if args.local is True:

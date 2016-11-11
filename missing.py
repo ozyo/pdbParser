@@ -12,12 +12,14 @@ def missinginfo(r465,compnd,ca):
             min=ca[ca['ch']== ch ]['resnr'].tolist()[0]
             for i in rmis:
                 if i < max and i > min:
-                    logging.critical('If there are multiple biological assemblies, I will try to pick the one that is not broken. Else, I will quit')
+                    logging.warning('If there are multiple biological assemblies, I will try to pick the one that is not broken. Else, I will quit')
                     missinginfo[ch]=0
                     continue
-            missinginfo[ch]=1
     else:
         logging.info('No missing residues detected.')
         for ch in chain:
+            missinginfo[ch]=1
+    for ch in compnd:
+        if ch not in missinginfo.keys():
             missinginfo[ch]=1
     return missinginfo
