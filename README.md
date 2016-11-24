@@ -1,4 +1,7 @@
-# ebDIMS_server
-pdbParser for eBDIMS, these could be of use to others as a standalone too.
+These scripts are written to clean the 3D structures of proteins deposited at the RCSB data bank. To make use of these scripts you need to install Python 2.7 and the packages listed below:
 
-This is not a completer package yet!!!!!
+* numpy
+* biopython
+
+To use the standalone version simply run:
+``` py
