@@ -22,4 +22,5 @@ def divide_mer(ca,compnd,mer,missinginfo):
     else:
         divide_mer=np.array_split(ca,slice)[batouse[0]]
         logging.info('I will continue with the %i biological assembly' %(batouse[0]+1))
+        print divide_mer
         return divide_mer

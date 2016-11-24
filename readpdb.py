@@ -73,8 +73,3 @@ def coord(atomlines,compnd):
     coords.dtype.names=('atnr','atname','altloc','resname','ch','resnr','icode','x','y','z','occu','tfact','element','charge')
     filt=coords[np.in1d(coords['ch'],compnd)]
     return filt
-
-#pdb=open('3RIF.pdb').readlines()
-#read=pdbread()
-#filt=read.readRemark(pdb)
-#print filt
