@@ -26,7 +26,6 @@ def missinginfo(r465,compnd,ca):
     for ch in compnd:
         if ch not in missinginfo.keys():
             missinginfo[ch]=1
-    print missinginfo
     if all(ch == 0 for ch in missinginfo.values()) is True:
         return None
     else:
