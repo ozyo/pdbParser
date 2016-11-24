@@ -27,7 +27,7 @@ args=parser.parse_args()
 sid=args.start[0]
 eid=args.end[0]
 
-def pdbParser(pdb,pdbid,mer,file):
+def pdbParser(pdb,pdbid,mer):
     print pdbid
     compnd=readcompnd(pdb)
     logging.info('Detected chains for %s are ' % (pdbid)+' '.join(i for i in compnd))
@@ -66,12 +66,10 @@ def pdbParser(pdb,pdbid,mer,file):
         exit()
     if len(compnd) > mer:
         div=divide_mer(ca,compnd,mer,missing)
-        #writeca(div,file)
     else:
         div=ca
-        #writeca(div,file)
     return div
-global toAlign
+
 if args.local is True:
     #We want to check the integrigty of the files anyways. It is possible that the user will provide anything else than CA atoms or missmatching files.
     #Deal with this later since those files will not have the header info
@@ -84,10 +82,13 @@ else:
     start=getpdb(sid)
     end=getpdb(eid)
     logging.info('Processing PDB files')
-    sca=pdbParser(start,sid,args.mer,'start.pdb')
-    eca=pdbParser(end,eid,args.mer,'end.pdb')
+    sca=pdbParser(start,sid,args.mer)
+    eca=pdbParser(end,eid,args.mer)
     logging.info('Retriving CA coordinates successful')
     toAlign=True
 
 if toAlign is True:
-    getaligned(sca,eca)
+    logging.info('If there are missing residues at the termini, I will try to extract a core region.')
+    score,ecore=getaligned(sca,eca)
+    writeca(score,'start.pdb')
+    writeca(ecore,'end.pdb')
