@@ -30,19 +30,6 @@ def readremark(pdb,compnd):
     filt=r465[np.in1d(r465['ch'],compnd)]
     return filt
 
-def readseq(pdb,compnd):
-    seqres={}
-    for ch in compnd:
-        seqres[ch]=[]
-    read=False
-    for line in pdb:
-        if 'SEQRES' in line:
-            ch=line[11]
-            if ch in compnd:
-                seq=line[19:-1].split()
-                seqres[ch]=seqres[ch]+seq
-    return seqres
-
 def readatom(pdb):
     atoms=[]
     read=False

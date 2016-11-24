@@ -8,7 +8,7 @@ from clean_pdb import *
 from divide_mer import *
 from missing import *
 from writepdb import *
-#from alignment import *
+from alignment import *
 import argparse
 import logging
 
@@ -57,7 +57,6 @@ def pdbParser(pdb,pdbid,mer,file):
     ca=getca(coords,compnd)
     #This is the part where we check the missing residues. I have a feeling we should do this before. But if we want a sequence alignment between two structure and retrive a region automatically for eBDIMS then doing it after is better so that we can also use the remarks and seqres to chop and align the sequences.
     r465=readremark(pdb,compnd)
-    #seq=readseq(pdb,compnd)
     missing=missinginfo(r465,compnd,ca)
     global div
     if missing is not None:
@@ -67,18 +66,19 @@ def pdbParser(pdb,pdbid,mer,file):
         exit()
     if len(compnd) > mer:
         div=divide_mer(ca,compnd,mer,missing)
-        writeca(div,file)
+        #writeca(div,file)
     else:
         div=ca
-        writeca(div,file)
-
+        #writeca(div,file)
+    return div
+global toAlign
 if args.local is True:
     #We want to check the integrigty of the files anyways. It is possible that the user will provide anything else than CA atoms or missmatching files.
+    #Deal with this later since those files will not have the header info
     logging.info('You have provided PDB files, assuming you have fixed the missing residues and made sure that the structures have the same number of residues')
     sca=getca(open(args.start[0]).readlines())
     eca=getca(open(args.end[0]).readlines())
-    #CHECK WITH ALIGNMENT
-    logging.info('Moving to eBDIMS calculations')
+    toAlign=False
 else:
     logging.info('Fetching PDB files from RCSB database')
     start=getpdb(sid)
@@ -87,4 +87,10 @@ else:
     sca=pdbParser(start,sid,args.mer,'start.pdb')
     eca=pdbParser(end,eid,args.mer,'end.pdb')
     logging.info('Retriving CA coordinates successful')
-    #CHECK WITH ALIGNMENT
+    toAlign=True
+
+if toAlign is True:
+    sseq=getseq(sca)[0]
+    eseq=getseq(eca)[0]
+    align(sseq,eseq)
+    
