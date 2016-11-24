@@ -8,7 +8,7 @@ from clean_pdb import *
 from divide_mer import *
 from missing import *
 from writepdb import *
-from alignment import *
+from alignment import getaligned
 import argparse
 import logging
 
@@ -90,7 +90,4 @@ else:
     toAlign=True
 
 if toAlign is True:
-    sseq=getseq(sca)[0]
-    eseq=getseq(eca)[0]
-    align(sseq,eseq)
-    
+    getaligned(sca,eca)
