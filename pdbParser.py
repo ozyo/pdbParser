@@ -1,8 +1,10 @@
+
 ###DEAL with the license options laters!!!!
 
 
-#This is the main script where we call
 from urllib2 import urlopen
+import readpdb, clean_pdb, divide_mer
+import missin, alignment, writepdb
 from readpdb import *
 from clean_pdb import *
 from divide_mer import *
