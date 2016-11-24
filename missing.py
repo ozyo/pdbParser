@@ -13,7 +13,8 @@ def missinginfo(r465,compnd,ca):
             for i in rmis:
                 if i < max and i > min:
                     logging.warning('If there are multiple biological assemblies, I will try to pick the one that is not broken. Else, I will quit')
-                    #we set the chain as not broken if the missing residues are at the termini only.
+                    #we set the chain as not complete if the missing residues are at the termini only.
+                    #0 broken, 1 complete
                     missinginfo[ch]=0
                     continue
     else:
@@ -25,4 +26,8 @@ def missinginfo(r465,compnd,ca):
     for ch in compnd:
         if ch not in missinginfo.keys():
             missinginfo[ch]=1
-    return missinginfo
+    print missinginfo
+    if all(ch == 0 for ch in missinginfo.values()) is True:
+        return None
+    else:
+        return missinginfo
