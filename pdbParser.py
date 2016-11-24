@@ -60,6 +60,11 @@ def pdbParser(pdb,pdbid,mer,file):
     #seq=readseq(pdb,compnd)
     missing=missinginfo(r465,compnd,ca)
     global div
+    if missing is not None:
+        pass
+    else:
+        logging.critical('All chains are broken, provide your input files.')
+        exit()
     if len(compnd) > mer:
         div=divide_mer(ca,compnd,mer,missing)
         writeca(div,file)
