@@ -6,6 +6,7 @@ from pdbparser.writepdb import writeca
 from align.alignment import getaligned
 import argparse
 import logging
+from os import getcwd
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -17,7 +18,8 @@ parser.add_argument('--no-local',help='Files are fetched from RCSB database',des
 parser.set_defaults(local=False)
 parser.add_argument('--multimeric', dest='mer', help='If the protein is multimeric provide the number of mers. Default is 1', type=int)
 parser.set_defaults(mer=1)
-
+parser.add_argument('--dir', dest='cwd', help='The directory to save the output files. Default is current work directory.')
+parser.set_defaults(cwd=getcwd())
 args=parser.parse_args()
 sid=args.start[0]
 eid=args.end[0]
@@ -43,5 +45,5 @@ else:
 if toAlign is True:
     logging.info('Extracting the core region.')
     score,ecore=getaligned(sca,eca)
-    writeca(score,'start.pdb')
-    writeca(ecore,'end.pdb')
+    writeca(score,cwd+'start.pdb')
+    writeca(ecore,cwd+'end.pdb')
