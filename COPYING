@@ -1,4 +1,6 @@
-
+pdbParser is a collection of python scripts that are written to obtain 
+CA coordinates from the PDB database. It was written to automate the 
+process for eBDIMS server. However, they can also be used as standalone.
 
                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
