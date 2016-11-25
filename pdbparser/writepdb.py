@@ -1,3 +1,5 @@
+#See COPYING for license 
+
 import numpy as np
 
 def writeca(div,file):

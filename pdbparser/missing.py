@@ -1,3 +1,4 @@
+#See COPYING for license 
 import numpy as np
 import logging
 

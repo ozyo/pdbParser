@@ -1,7 +1,5 @@
-#Things to do
-#func 1 identify the multiple rotamers
-#clean anything that is not CA
-#return CA coordinates.
+#See COPYING for license 
+
 import numpy as np
 import logging
 
