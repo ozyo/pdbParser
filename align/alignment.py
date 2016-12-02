@@ -18,10 +18,10 @@ def getseq(ca):
 
 def align(seq1,seq2):
     if isinstance(seq1, basestring):
-        alignments=pairwise2.align.globalds(seq1,seq2,matrix,-1000,-.5)
+        alignments=pairwise2.align.globalms(seq1,seq2,2,0,-5,-5)
         return alignments
     elif isinstance(seq1, list):
-        alignments=pairwise2.align.globalds(seq1,seq2,matrix,-1000,-.5,gap_char=['-'])
+        alignments=pairwise2.align.globalms(seq1,seq2,2,0,-5,-5,gap_char=['-'])
         return alignments
 
 def findgap(aca):
@@ -31,7 +31,7 @@ def findgap(aca):
         start=next(ind for ind,gap in enumerate(aca) if gap != '-')
         end=-1
     elif aca[-1] == '-' and aca[0] != '-':
-        end=aca.index('-')
+        end=aca.index('-')-len(aca)-1
         start=0
     elif aca[0] == '-' and aca[-1] == '-':
         start=next(ind for ind,gap in enumerate(aca) if gap != '-')
@@ -61,10 +61,23 @@ def getaligned(ca1,ca2):
     if len(core1) == len(core2):
         return core1, core2
     else:
+        print len(core1), len(core2)
         logging.critical('This was not supposed to happen')
         logging.critical('I am not extracting the same region for both sequences, returning the structures for debugging.')
-        logging.critical('I have also wrote the alignment file, you might want to play around with the alignment parameters.')
-        outf=open('alignment.txt','w')
-        outf.write(aligned)
-        outf.close()
         return core1, core2
+
+def multialigned(ca1,ca2,mer):
+    chains1=np.array_split(ca1,mer)
+    chains2=np.array_split(ca2,mer)
+    whole1=None
+    whole2=None
+    for a,b in zip(chains1,chains2):
+        cores=getaligned(a,b)
+        if whole1 is None:
+            whole1=cores[0]
+            whole2=cores[1]
+        elif whole1 is not None:
+            whole1=np.append(whole1,cores[0],axis=0)
+            whole2=np.append(whole2,cores[1],axis=0)
+
+    return whole1, whole2
