@@ -19,9 +19,14 @@ parser.add_argument('--multimeric', dest='mer', help='If the protein is multimer
 parser.set_defaults(mer=1)
 parser.add_argument('--dir', dest='cwd', help='The directory to save the output files. Default is current work directory.')
 parser.set_defaults(cwd=getcwd())
+
 args=parser.parse_args()
-sid=args.start[0]
-eid=args.end[0]
+try:
+    sid=args.start[0]
+    eid=args.end[0]
+except TypeError:
+    parser.print_help()
+    exit()
 
 if args.local is True:
     #We want to check the integrigty of the files anyways. It is possible that the user will provide anything else than CA atoms or missmatching files.

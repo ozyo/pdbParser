@@ -64,6 +64,7 @@ def getaligned(ca1,ca2):
         print len(core1), len(core2)
         logging.critical('This was not supposed to happen')
         logging.critical('I am not extracting the same region for both sequences, returning the structures for debugging.')
+        print aligned
         return core1, core2
 
 def multialigned(ca1,ca2,mer):
