@@ -2,12 +2,19 @@
 
 #We need to read quite a bit of information from the REMARKS lines. So it is better to keep them in a seperate module.
 import numpy as np
-from urllib2 import urlopen
+import urllib2 
 import logging
 
 def getpdb(pdbid):
-    url='http://files.rcsb.org/view/%s.pdb' %pdbid
-    return urlopen(url).readlines()
+    try:
+        url='http://files.rcsb.org/view/%s.pdb' %pdbid
+        return urllib2.urlopen(url).readlines()
+    except urllib2.HTTPError as err:
+        if err.code == 404:
+            logging.critical('PDB code not found')
+        else:
+            logging.critical('Cannot reach PDB database, unknown error')
+        exit()
 
 def readcompnd(pdb):
     compnd=None
