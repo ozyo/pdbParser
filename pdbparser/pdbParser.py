@@ -24,7 +24,7 @@ def pdbParser(pdb,pdbid,mer):
             logging.warning('You chose only 1 chain for the analysis but there are more chains in the biological assembly.')
             logging.warning('Assuming monomeric assembly.')
         elif mer > len(compnd):
-            logging.warning("Structure contains less chains then the supplied multimeric option. Assuming not complete structure, please provide your own input files")
+            logging.warning("Structure contains less chains then the supplied number. Assuming not complete structure, please provide your own input files")
             exit()
         elif mer == len(compnd):
             pass
