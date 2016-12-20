@@ -18,10 +18,10 @@ def getseq(ca):
 
 def align(seq1,seq2):
     if isinstance(seq1, basestring):
-        alignments=pairwise2.align.globalms(seq1,seq2,2,0,-5,-5)
+        alignments=pairwise2.align.globalds(seq1,seq2,matrix,-11,-1)
         return alignments
     elif isinstance(seq1, list):
-        alignments=pairwise2.align.globalms(seq1,seq2,2,0,-5,-5,gap_char=['-'])
+        alignments=pairwise2.align.globalds(seq1,seq2,matrix,-11,-1,gap_char=['-'])
         return alignments
 
 def findgap(aca):
@@ -46,6 +46,7 @@ def getaligned(ca1,ca2):
     sca2,mapca2=getseq(ca2)
     #Grabs the first alignment
     aligned=align(sca1,sca2)[0]
+    print aligned
     aca1=list(aligned[0])
     aca2=list(aligned[1])
     shift1=findgap(aca1)
@@ -56,29 +57,29 @@ def getaligned(ca1,ca2):
     nter2=mapca2[shift1[0]:shift1[1]][0]
     cter2=mapca2[shift1[0]:shift1[1]][-1]
     #since we mapped it to the opposite in the steps above, we can return back to normal
-    core1=ca1[(ca1['resnr']>nter1[2]) & (ca1['resnr']<cter1[2])]
-    core2=ca2[(ca2['resnr']>nter2[2]) & (ca2['resnr']<cter2[2])]
+    core1=ca1[(ca1['resnr']>=nter1[2]) & (ca1['resnr']<=cter1[2])]
+    core2=ca2[(ca2['resnr']>=nter2[2]) & (ca2['resnr']<=cter2[2])]
     if len(core1) == len(core2):
+        logging.info('Run successful proceeding with eBDIMS calculation')
         return core1, core2
     else:
-        print len(core1), len(core2)
-        logging.critical('This was not supposed to happen')
-        logging.critical('I am not extracting the same region for both sequences, returning the structures for debugging.')
-        print aligned
-        return core1, core2
+        logging.critical('Different number of atoms.')
+        logging.critical('I am not extracting the same region for these structures')
+        logging.critical('Please upload your own structures to continue. ')
+        exit()
+
+        
 
 def multialigned(ca1,ca2,mer):
-    chains1=np.array_split(ca1,mer)
-    chains2=np.array_split(ca2,mer)
     whole1=None
     whole2=None
-    for a,b in zip(chains1,chains2):
-        cores=getaligned(a,b)
-        if whole1 is None:
-            whole1=cores[0]
-            whole2=cores[1]
-        elif whole1 is not None:
-            whole1=np.append(whole1,cores[0],axis=0)
-            whole2=np.append(whole2,cores[1],axis=0)
-
+    if len(np.unique(ca1['ch'])) == len(np.unique(ca2['ch'])) and len(np.unique(ca1['ch'])) == mer:        
+        for a,b in zip(np.unique(ca1['ch']),np.unique(ca2['ch'])):
+            cores=getaligned(ca1[ca1['ch']==a],ca2[ca2['ch']==b])
+            if whole1 is None:
+                whole1=cores[0]
+                whole2=cores[1]
+            elif whole1 is not None:
+                whole1=np.append(whole1,cores[0],axis=0)
+                whole2=np.append(whole2,cores[1],axis=0)
     return whole1, whole2

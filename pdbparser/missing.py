@@ -20,7 +20,7 @@ def missinginfo(r465,compnd,ca):
                     continue
     else:
         logging.info('No missing residues detected.')
-        for ch in chain:
+        for ch in compnd:
             missinginfo[ch]=1
     #This is to set the remaining chains as broken. 
     # Perhaps modifying the loop would help, but when the below commands are within the first *if* loop chain info is overwritten. 

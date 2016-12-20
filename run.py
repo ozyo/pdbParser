@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 parser = argparse.ArgumentParser(description='Identification of Missing residues')
 parser.add_argument('--start', metavar='PDB Code', nargs=1 , help='Crystal structure from PDB database with the header')
-parser.add_argument('--end', metavar='PDB Code', nargs=1 , help='Crystal structure from PDB database with the header')
+parser.add_argument('--target', metavar='PDB Code', nargs=1 , help='Crystal structure from PDB database with the header')
 parser.add_argument('--local',help='User PDB files',dest='local', action='store_true')
 parser.set_defaults(local=False)
 parser.add_argument('--multimeric', dest='mer', help='If the protein is multimeric provide the number of mers. Default is 1', type=int)
@@ -23,7 +23,7 @@ parser.set_defaults(cwd=getcwd())
 args=parser.parse_args()
 try:
     sid=args.start[0]
-    eid=args.end[0]
+    eid=args.target[0]
 except TypeError:
     parser.print_help()
     exit()
@@ -34,7 +34,7 @@ if args.local is True:
     logging.warning('You have provided PDB files, assuming you have fixed the missing residues.')
     logging.info('Reading PDB files, extracting the core region...')
     sca=clean_pdb.getca(open(args.start[0]).readlines())
-    eca=clean_pdb.getca(open(args.end[0]).readlines())
+    eca=clean_pdb.getca(open(args.target[0]).readlines())
     toAlign=True
 else:
     logging.info('Fetching PDB files from RCSB database')
@@ -50,9 +50,9 @@ if toAlign is True and args.mer == 1:
     logging.info('Extracting the core region.')
     score,ecore=getaligned(sca,eca)
     writeca(score,'start.pdb')
-    writeca(ecore,'end.pdb')
+    writeca(ecore,'target.pdb')
 elif toAlign is True and args.mer !=1:
     logging.info('Extracting the core region.')
     score,ecore=multialigned(sca,eca,args.mer)
     writeca(score,'start.pdb')
-    writeca(ecore,'end.pdb')
+    writeca(ecore,'target.pdb')
