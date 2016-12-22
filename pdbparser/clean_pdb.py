@@ -3,7 +3,7 @@
 import numpy as np
 import logging
 
-def getca(coord,compnd):
+def getca(coord):
     delalter=coord[coord['altloc'] != 'B']
     logging.warning('Cleaning alternative location B if present')
     logging.warning('Currently no support is provided for chosing a different alternative location')

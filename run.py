@@ -4,6 +4,7 @@ from pdbparser.pdbParser import pdbParser
 from pdbparser.readpdb import getpdb
 from pdbparser.writepdb import writeca
 from align.alignment import getaligned, multialigned
+from pdbparser.pdbParser import pdbParselocal
 import argparse
 import logging
 from os import getcwd
@@ -33,8 +34,8 @@ if args.local is True:
     #Deal with this later since those files will not have the header info
     logging.warning('You have provided PDB files, assuming you have fixed the missing residues.')
     logging.info('Reading PDB files, extracting the core region...')
-    sca=clean_pdb.getca(open(args.start[0]).readlines())
-    eca=clean_pdb.getca(open(args.target[0]).readlines())
+    sca=pdbParselocal(open(args.start[0]).readlines())
+    eca=pdbParselocal(open(args.target[0]).readlines())
     toAlign=True
 else:
     logging.info('Fetching PDB files from RCSB database')

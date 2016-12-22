@@ -32,7 +32,7 @@ def pdbParser(pdb,pdbid,mer):
     logging.info('Retriving CA coordinates')
     atomlines=readpdb.readatom(pdb)
     coords=readpdb.coord(atomlines,compnd)
-    ca=clean_pdb.getca(coords,compnd)
+    ca=clean_pdb.getca(coords)
     #This is the part where we check the missing residues. I have a feeling we should do this before. But if we want a sequence alignment between two structure and retrive a region automatically for eBDIMS then doing it after is better so that we can also use the remarks and seqres to chop and align the sequences.
     r465=readpdb.readremark(pdb,compnd)
     misinfo=missing.missinginfo(r465,compnd,ca)
@@ -47,3 +47,11 @@ def pdbParser(pdb,pdbid,mer):
     else:
         div=ca
     return div
+
+
+def pdbParselocal(pdb):
+    compnd=None
+    atomlines=readpdb.readatom(pdb)
+    coords=readpdb.coord(atomlines,compnd)
+    ca=clean_pdb.getca(coords)
+    return ca
