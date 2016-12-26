@@ -57,15 +57,15 @@ def getaligned(ca1,ca2):
     nter2=mapca2[shift1[0]:shift1[1]][0]
     cter2=mapca2[shift1[0]:shift1[1]][-1]
     #since we mapped it to the opposite in the steps above, we can return back to normal
-    core1=ca1[(ca1['resnr']>=nter1[2]) & (ca1['resnr']<=cter1[2])]
-    core2=ca2[(ca2['resnr']>=nter2[2]) & (ca2['resnr']<=cter2[2])]
+    core1=ca1[(ca1['resnr']>=nter1[2]) & (ca1['resnr']<=cter1[2]+1)]
+    core2=ca2[(ca2['resnr']>=nter2[2]) & (ca2['resnr']<=cter2[2]+1)]
     if len(core1) == len(core2):
         logging.info('Run successful proceeding with eBDIMS calculation')
         return core1, core2
     else:
         logging.critical('Different number of atoms.')
         logging.critical('I am not extracting the same region for these structures')
-        logging.critical('Please upload your own structures to continue. ')
+        logging.critical('Please upload your own to continue. ')
         exit()
 
         

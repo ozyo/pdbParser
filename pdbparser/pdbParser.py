@@ -10,7 +10,7 @@ def pdbParser(pdb,pdbid,mer):
     compnd=readpdb.readcompnd(pdb)
     logging.info('Detected chains for %s are ' % (pdbid)+' '.join(i for i in compnd))
     if len(compnd) is not 1:
-        logging.info('If multimeric option not chosen continuing with the chain %s' %(compnd[0]))
+        logging.info('If multimeric option not chosen continuing with the first chain that is complete')
     if mer != 1:
         logging.info('Multimeric option chosen...')
         if mer < len(compnd):

@@ -1,3 +1,4 @@
+
 #See COPYING for license 
 
 #We need to read quite a bit of information from the REMARKS lines. So it is better to keep them in a seperate module.
@@ -15,27 +16,48 @@ def getpdb(pdbid):
         else:
             logging.critical('Cannot reach PDB database, unknown error')
         exit()
-
+def checkmulti(pdb):
+    for line in pdb:
+        if 'NMR' in line:
+            logging.critical('Current version cannot handle multipdb files.')
+            logging.critical('Please upload your own structures.')
+            exit()
+        else:
+            pass
 def readcompnd(pdb):
     compnd=None
     compndlist=[]
+    molin=[]
     read=False
     for line in pdb:
         if 'COMPND' in line:
-            compndlist.append(line)
-
+            compndlist.append(line[10:-1].strip())
     for line in compndlist:
-        try:
-            if 'MOLECULE:' and '5\'' in line:
-                compndlist.remove('COMPND MOL_ID: 1')
-        except ValueError:
-            pass
-
-    for line in compndlist:
-        if 'MOL_ID:' in line:
-            read=True
-        if read is True and 'CHAIN:' in line:
-            compnd=[i.strip().strip(';') for i in line.split(':')[1].split(',')]
+        if line.startswith('MOL_ID:'):
+            molin.append(compndlist.index(line))
+    if len(molin) >2:
+        logging.critical('Current version cannot handle this pdb file.')
+        logging.critical('Please provide your input files')
+    elif len(molin) == 2:
+        molid=1
+        molid1=compndlist[molin[0]:molin[1]] 
+        molid2=compndlist[molin[1]:-1]
+        checks=['DNA','RNA','5\'','3\'']
+        for line in molid1:
+            if any(s in line for s in checks):
+                molid=2
+        if molid == 1:
+            for line in molid1:
+                if 'CHAIN:' in line:
+                    compnd=[i.strip().strip(';') for i in line.split(':')[1].split(',')]
+        else:
+            for line in molid2:
+                if 'CHAIN:' in line:
+                    compnd=[i.strip().strip(';') for i in line.split(':')[1].split(',')]
+    else:
+        for line in compndlist:
+            if 'CHAIN:' in line:
+                compnd=[i.strip().strip(';') for i in line.split(':')[1].split(',')]
     return compnd
 
 def readremark(pdb,compnd):

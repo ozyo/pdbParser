@@ -2,6 +2,7 @@
 
 from pdbparser.pdbParser import pdbParser
 from pdbparser.readpdb import getpdb
+from pdbparser.readpdb import checkmulti
 from pdbparser.writepdb import writeca
 from align.alignment import getaligned, multialigned
 from pdbparser.pdbParser import pdbParselocal
@@ -41,6 +42,8 @@ else:
     logging.info('Fetching PDB files from RCSB database')
     start=getpdb(sid)
     end=getpdb(eid)
+    checkmulti(start)
+    checkmulti(end)
     logging.info('Processing PDB files')
     sca=pdbParser(start,sid,args.mer)
     eca=pdbParser(end,eid,args.mer)
