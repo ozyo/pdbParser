@@ -35,7 +35,7 @@ def findgap(aca):
         start=0
     elif aca[0] == '-' and aca[-1] == '-':
         start=next(ind for ind,gap in enumerate(aca) if gap != '-')
-        end=aca[start:-1].index('-')+start
+        end=aca[start:-1].index('-')+start-1
     else:
         start=0
         end=-1
@@ -57,8 +57,8 @@ def getaligned(ca1,ca2):
     nter2=mapca2[shift1[0]:shift1[1]][0]
     cter2=mapca2[shift1[0]:shift1[1]][-1]
     #since we mapped it to the opposite in the steps above, we can return back to normal
-    core1=ca1[(ca1['resnr']>=nter1[2]) & (ca1['resnr']<=cter1[2]+1)]
-    core2=ca2[(ca2['resnr']>=nter2[2]) & (ca2['resnr']<=cter2[2]+1)]
+    core1=ca1[(ca1['resnr']>=nter1[2]) & (ca1['resnr']<=cter1[2])]
+    core2=ca2[(ca2['resnr']>=nter2[2]) & (ca2['resnr']<=cter2[2])]
     if len(core1) == len(core2):
         logging.info('Run successful proceeding with eBDIMS calculation')
         return core1, core2
@@ -66,7 +66,8 @@ def getaligned(ca1,ca2):
         logging.critical('Different number of atoms.')
         logging.critical('I am not extracting the same region for these structures')
         logging.critical('Please upload your own to continue. ')
-        exit()
+        return core1, core2
+#        exit()
 
         
 
