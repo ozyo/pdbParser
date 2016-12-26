@@ -66,8 +66,8 @@ def getaligned(ca1,ca2):
         logging.critical('Different number of atoms.')
         logging.critical('I am not extracting the same region for these structures')
         logging.critical('Please upload your own to continue. ')
-        return core1, core2
-#        exit()
+#        return core1, core2
+        exit()
 
         
 
