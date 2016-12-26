@@ -10,8 +10,6 @@ import argparse
 import logging
 from os import getcwd
 
-logging.basicConfig(level=logging.DEBUG)
-
 parser = argparse.ArgumentParser(description='Identification of Missing residues')
 parser.add_argument('--start', metavar='PDB Code', nargs=1 , help='Crystal structure from PDB database with the header')
 parser.add_argument('--target', metavar='PDB Code', nargs=1 , help='Crystal structure from PDB database with the header')
@@ -29,6 +27,10 @@ try:
 except TypeError:
     parser.print_help()
     exit()
+print args.cwd
+
+outf=args.cwd+'/error.dat'
+logging.basicConfig(level=logging.CRITICAL,filename=outf)
 
 if args.local is True:
     #We want to check the integrigty of the files anyways. It is possible that the user will provide anything else than CA atoms or missmatching files.
@@ -58,5 +60,5 @@ if toAlign is True and args.mer == 1:
 elif toAlign is True and args.mer !=1:
     logging.info('Extracting the core region.')
     score,ecore=multialigned(sca,eca,args.mer)
-    writeca(score,'start.pdb')
-    writeca(ecore,'target.pdb')
+    writeca(score,args.cwd+'/start.pdb')
+    writeca(ecore,args.cwd+'/target.pdb')
