@@ -78,7 +78,15 @@ def readatom(pdb):
             atoms.append(line)
     return atoms
 
-def coord(atomlines,compnd):
+def readall(pdb):
+    atoms=[]
+    read=False
+    for line in pdb:
+        if line.startswith('ATOM') or line.startswith('HETATM'):
+            atoms.append(line)
+    return atoms
+
+def coord(atomlines):
     coords=[]
     for atom in atomlines:
         atnr=int(atom[6:11].strip())
@@ -91,14 +99,17 @@ def coord(atomlines,compnd):
         x=float(atom[30:38].strip())
         y=float(atom[38:46].strip())
         z=float(atom[46:54].strip())
-        occu=float(atom[54:60].strip())
-        tfact=float(atom[60:66].strip())
+        try:
+            occu=float(atom[54:60].strip())
+        except ValueError:
+            occu=0.0
+        try:
+            tfact=float(atom[60:66].strip())
+        except ValueError:
+            tfact=0.0
         element=str(atom[76:78].strip())
         charge=str(atom[78:80].strip())
         coords.append((atnr,atname,altloc,resname,ch,resnr,icode,x,y,z,occu,tfact,element,charge))
     coords=np.array(coords,dtype=('i,S4,S4,S4,S4,i,S4,f,f,f,f,f,S4,S4'))
     coords.dtype.names=('atnr','atname','altloc','resname','ch','resnr','icode','x','y','z','occu','tfact','element','charge')
-    if compnd is None:
-        compnd=[np.unique(coords['ch']).tolist()]
-    filt=coords[np.in1d(coords['ch'],compnd)]
-    return filt
+    return coords

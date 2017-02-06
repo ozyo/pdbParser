@@ -9,3 +9,9 @@ def getca(coord):
     logging.warning('Currently no support is provided for chosing a different alternative location')
     ca=delalter[np.in1d(delalter['atname'],'CA')]
     return ca
+
+def getall(coord):
+    delalter=coord[coord['altloc'] != 'B']
+    logging.warning('Cleaning alternative location B if present')
+    logging.warning('Currently no support is provided for chosing a different alternative location')
+    return delalter
