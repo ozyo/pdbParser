@@ -48,7 +48,7 @@ else:
     start=getpdb(sid)
     checkmulti(start)
     logging.info('Processing PDB files')
-    sca=pdbParser(start,sid,args.mer,args.cwd)
+    sca=pdbParser(start,sid,args.mer,args.cwd,args.altloc)
     logging.info('Retriving CA coordinates successful')
     if args.charmm is True:
         logging.info('Finished')

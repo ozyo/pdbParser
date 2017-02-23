@@ -23,13 +23,14 @@ def replace(a,old,new):
 
 class Segsep(object):
     def __init__(self,coord):
-        self.hoh=coord[coord['resname'] == 'HOH']
-        self.rest=coord[coord['resname'] != 'HOH']
+        self.hoh=coord[(coord['resname'] == 'HOH') | (coord['resname'] == 'TIP3')]
+        self.rest=coord[(coord['resname'] != 'HOH') & (coord['resname'] != 'TIP3')]
         self.chains=set(self.rest['ch'].tolist())
+        print self.chains
     def sep_segs(self,coord,cwd):
+        remove=['element','charge']
         for chain in self.chains:
             seg_ch=self.rest[self.rest['ch']==chain]
-            remove=['element','charge']
             seg_less=seg_ch
             for name in remove:
                 seg_less=remove_field_name(seg_less,name)
@@ -38,3 +39,9 @@ class Segsep(object):
             new=['ADE','CYT','GUA','THY']
             seg_new=replace(seg_id,old,new)
             writecharmm(seg_id,cwd+'/seg'+chain.lower()+'.pdb')
+        seg_less_wat=self.hoh
+        for name in remove:
+            seg_less_wat=remove_field_name(seg_less_wat,name)
+        seg_id_wat=numpy.lib.recfunctions.append_fields(seg_less_wat, 'segid', ['SEGW']*len(seg_less_wat), dtypes='S4', usemask=False, asrecarray=True)
+        seg_new_wat=replace(seg_id_wat,['HOH'],['TIP3'])
+        writecharmm(seg_id_wat,cwd+'/segw'+'.pdb')
