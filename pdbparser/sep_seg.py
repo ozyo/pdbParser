@@ -34,7 +34,7 @@ class Segsep(object):
             for name in remove:
                 seg_less=remove_field_name(seg_less,name)
             seg_id=numpy.lib.recfunctions.append_fields(seg_less, 'segid', ['SEG'+chain]*len(seg_less), dtypes='S4', usemask=False, asrecarray=True)
-            old=['A','C','G','T']
+            old=['DA','DC','DG','DT']
             new=['ADE','CYT','GUA','THY']
             seg_new=replace(seg_id,old,new)
-            writecharmm(seg_id,cwd+'/seg'+chain+'.pdb')
+            writecharmm(seg_id,cwd+'/seg'+chain.lower()+'.pdb')

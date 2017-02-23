@@ -92,7 +92,7 @@ def coord(atomlines):
         atnr=int(atom[6:11].strip())
         atname=str(atom[12:16].strip())
         altloc=str(atom[16].strip())
-        resname=str(atom[17:20].strip())
+        resname=str(atom[17:21].strip())
         ch=str(atom[21])
         resnr=int(atom[22:26])
         icode=str(atom[26].strip())

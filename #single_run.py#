@@ -40,9 +40,9 @@ if args.local is True:
     logging.warning('You have provided PDB files, assuming you have fixed the missing residues.')
     logging.info('Reading PDB files, extracting the core region...')
     if args.charmm is True:
-        sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,True,args.altloc)
+        sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,True)
     else:
-        sca=pdbParselocal(open(args.start[0]).readlines(),args.altloc)
+        sca=pdbParselocal(open(args.start[0]).readlines())
 else:
     logging.info('Fetching PDB files from RCSB database')
     start=getpdb(sid)
