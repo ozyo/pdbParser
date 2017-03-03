@@ -9,6 +9,8 @@ from pdbparser.pdbParser import pdbParselocal
 import argparse
 import logging
 from os import getcwd
+from pdbparser.rnr import rnrseg_charmm
+from pdbparser.rnr import rnratnr_charmm
 
 parser = argparse.ArgumentParser(description='Identification of Missing residues')
 parser.add_argument('--start', metavar='PDB Code', nargs=1 , help='Crystal structure from PDB database with the header')
@@ -23,6 +25,8 @@ parser.add_argument('--charmm', dest='charmm', help='Write charmm segments',acti
 parser.set_defaults(charmm=False)
 parser.add_argument('--altloc', dest='altloc', help='Alternative location to be extracted, default is A')
 parser.set_defaults(altloc='A')
+parser.add_argument('--renumber',dest='renumber',help='renumber Water segment residue numbers or renumber atoms; segw or atnr')
+parser.set_defaults(renumber=False)
 
 args=parser.parse_args()
 try:
@@ -36,13 +40,19 @@ print args.cwd
 outf=args.cwd+'/error.dat'
 logging.basicConfig(level=logging.CRITICAL,filename=outf)
 
+print args.renumber
+
 if args.local is True:
     logging.warning('You have provided PDB files, assuming you have fixed the missing residues.')
     logging.info('Reading PDB files, extracting the core region...')
     if args.charmm is True:
         sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,True,args.altloc)
+    elif str(args.renumber) == 'segw':
+        rnrseg_charmm(open(args.start[0]).readlines(),'SEGW',args.cwd)
+    elif str(args.renumber) == 'atnr':
+        rnratnr_charmm(open(args.start[0]).readlines(),args.cwd)
     else:
-        sca=pdbParselocal(open(args.start[0]).readlines(),args.altloc)
+        sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,True,args.altloc)
 else:
     logging.info('Fetching PDB files from RCSB database')
     start=getpdb(sid)
