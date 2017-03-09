@@ -7,7 +7,7 @@ from writepdb import writecharmm
 import numpy.lib.recfunctions
 import os
 from readpdb import readall
-
+from sep_seg import remove_field_name
 def read_charmm(atomlines):
     atomlines=readall(atomlines)
     coords=[]
@@ -37,12 +37,13 @@ def read_charmm(atomlines):
     return coords
 
 def renumber(coord,seg):
-    totnr=len(coord[coord['segid']==seg])/3
+    totnr=len(coord[coord['segid']==seg])/1 #3 for full atomistic
+    print totnr
     i=np.where(coord['segid']==seg)
     for res in range(0,totnr):
-        coord[i[0][3*res]]['resnr'] = res+1
-        coord[i[0][3*res+1]]['resnr'] = res+1
-        coord[i[0][3*res+2]]['resnr'] = res+1
+        coord[i[0][1*res]]['resnr'] = res+1 # 3* res for full atomistic
+        #coord[i[0][3*res+1]]['resnr'] = res+1 # same above
+        #coord[i[0][3*res+2]]['resnr'] = res+1 #same above
     return coord
 
 def renumberatom(coord):
@@ -54,12 +55,14 @@ def renumberatom(coord):
     
 def rnrseg_charmm(coord,seg,cwd):
     atoms=read_charmm(coord)
+    #renumbered=remove_field_name(renumber(atoms,seg),'icode')
     renumbered=renumber(atoms,seg)
     writecharmm(renumbered,cwd+'/renumbered.pdb')
     exit
 
 def rnratnr_charmm(coord,cwd):
     atoms=read_charmm(coord)
+    #renumbered=remove_field_name(renumberatom(atoms),'icode')
     renumbered=renumberatom(atoms)
     writecharmm(renumbered,cwd+'/renumbered.pdb')
     exit

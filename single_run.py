@@ -25,9 +25,9 @@ parser.add_argument('--charmm', dest='charmm', help='Write charmm segments',acti
 parser.set_defaults(charmm=False)
 parser.add_argument('--altloc', dest='altloc', help='Alternative location to be extracted, default is A')
 parser.set_defaults(altloc='A')
-parser.add_argument('--renumber',dest='renumber',help='renumber Water segment residue numbers or renumber atoms; segw or atnr')
+parser.add_argument('--renumber',dest='renumber',help='renumber Water segment residue numbers or renumber atoms; seg or atnr')
 parser.set_defaults(renumber=False)
-
+parser.add_argument('--segid',dest='segid',help='Segment identifier to renumber')
 args=parser.parse_args()
 try:
     sid=args.start[0]
@@ -47,8 +47,8 @@ if args.local is True:
     logging.info('Reading PDB files, extracting the core region...')
     if args.charmm is True:
         sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,True,args.altloc)
-    elif str(args.renumber) == 'segw':
-        rnrseg_charmm(open(args.start[0]).readlines(),'SEGW',args.cwd)
+    elif str(args.renumber) == 'seg':
+        rnrseg_charmm(open(args.start[0]).readlines(),args.segid,args.cwd)
     elif str(args.renumber) == 'atnr':
         rnratnr_charmm(open(args.start[0]).readlines(),args.cwd)
     else:

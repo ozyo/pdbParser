@@ -38,10 +38,12 @@ class Segsep(object):
             old=['DA','DC','DG','DT']
             new=['ADE','CYT','GUA','THY']
             seg_new=replace(seg_id,old,new)
-            writecharmm(seg_id,cwd+'/seg'+chain.lower()+'.pdb')
+            #seg_final=remove_field_name(seg_new,"icode")
+            writecharmm(seg_new,cwd+'/seg'+chain.lower()+'.pdb')
         seg_less_wat=self.hoh
         for name in remove:
             seg_less_wat=remove_field_name(seg_less_wat,name)
         seg_id_wat=numpy.lib.recfunctions.append_fields(seg_less_wat, 'segid', ['SEGW']*len(seg_less_wat), dtypes='S4', usemask=False, asrecarray=True)
         seg_new_wat=replace(seg_id_wat,['HOH'],['TIP3'])
-        writecharmm(seg_id_wat,cwd+'/segw'+'.pdb')
+        #seg_final_wat=remove_field_name(seg_new_wat,"icode")
+        writecharmm(seg_new_wat,cwd+'/segw'+'.pdb')
