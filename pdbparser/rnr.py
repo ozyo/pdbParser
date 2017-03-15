@@ -37,13 +37,13 @@ def read_charmm(atomlines):
     return coords
 
 def renumber(coord,seg):
-    totnr=len(coord[coord['segid']==seg])/1 #3 for full atomistic
+    totnr=len(coord[coord['segid']==seg])/3 #3 for full atomistic
     print totnr
     i=np.where(coord['segid']==seg)
     for res in range(0,totnr):
-        coord[i[0][1*res]]['resnr'] = res+1 # 3* res for full atomistic
-        #coord[i[0][3*res+1]]['resnr'] = res+1 # same above
-        #coord[i[0][3*res+2]]['resnr'] = res+1 #same above
+        coord[i[0][3*res]]['resnr'] = res+1 # 3* res for full atomistic
+        coord[i[0][3*res+1]]['resnr'] = res+1 # same above
+        coord[i[0][3*res+2]]['resnr'] = res+1 #same above
     return coord
 
 def renumberatom(coord):
