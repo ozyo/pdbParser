@@ -18,10 +18,10 @@ def getseq(ca):
 
 def align(seq1,seq2):
     if isinstance(seq1, basestring):
-        alignments=pairwise2.align.globalds(seq1,seq2,matrix,-11,-1)
+        alignments=pairwise2.align.globalds(seq1,seq2,matrix,-11,-11,penalize_end_gaps=True,)
         return alignments
     elif isinstance(seq1, list):
-        alignments=pairwise2.align.globalds(seq1,seq2,matrix,-11,-1,gap_char=['-'])
+        alignments=pairwise2.align.globalds(seq1,seq2,matrix,-11,-11,gap_char=['-'],penalize_end_gaps=True)
         return alignments
 
 def findgap(aca):
@@ -29,16 +29,16 @@ def findgap(aca):
     global end
     if aca[0] == '-' and aca[-1] != '-':
         start=next(ind for ind,gap in enumerate(aca) if gap != '-')
-        end=-1
+        end=len(aca)+1
     elif aca[-1] == '-' and aca[0] != '-':
-        end=aca.index('-')-len(aca)-1
+        end=aca.index('-')-len(aca)#-1
         start=0
     elif aca[0] == '-' and aca[-1] == '-':
         start=next(ind for ind,gap in enumerate(aca) if gap != '-')
         end=aca[start:-1].index('-')+start-1
     else:
         start=0
-        end=-1
+        end=len(aca)+1
     return start,end
 
 def getaligned(ca1,ca2):
@@ -66,9 +66,9 @@ def getaligned(ca1,ca2):
         logging.critical('Different number of atoms.')
         logging.critical('I am not extracting the same region for these structures')
         logging.critical('Please upload your own to continue. ')
-#        return core1, core2
+        logging.critical('FAIL')
+        return core1, core2
         exit()
-
         
 
 def multialigned(ca1,ca2,mer):
