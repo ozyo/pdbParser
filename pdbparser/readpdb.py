@@ -7,15 +7,19 @@ import urllib2
 import logging
 
 def getpdb(pdbid):
-    try:
-        url='http://files.rcsb.org/view/%s.pdb' %pdbid
-        return urllib2.urlopen(url).readlines()
-    except urllib2.HTTPError as err:
-        if err.code == 404:
-            logging.critical('PDB code not found')
-        else:
-            logging.critical('Cannot reach PDB database, unknown error')
-        exit()
+    if len(pdbid) == 4:
+        try:
+            url='http://files.rcsb.org/view/%s.pdb' %pdbid
+            return urllib2.urlopen(url).readlines()
+        except urllib2.HTTPError as err:
+            if err.code == 404:
+                logging.critical('PDB code not found')
+            else:
+                logging.critical('Cannot reach PDB database, unknown error')    
+    else:
+        logging.info('Trying to open the file')
+        return pdbid.readlines()
+
 def checkmulti(pdb):
     for line in pdb:
         if 'NMR' in line:
@@ -24,6 +28,7 @@ def checkmulti(pdb):
             exit()
         else:
             pass
+
 def readcompnd(pdb):
     compnd=None
     compndlist=[]
