@@ -31,6 +31,6 @@ def pdbParselocal(pdb,cwd,charmm,altloc):
         atomlines=readpdb.readall(pdb)
         coords=readpdb.coord(atomlines)
         ca=clean_pdb.getall(coords,altloc)
-        segs=Segsep(coords)
+        segs=Segsep(ca)
         final_segs=segs.sep_segs(ca,cwd)
         return final_segs

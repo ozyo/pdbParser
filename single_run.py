@@ -52,7 +52,8 @@ if args.local is True:
     elif str(args.renumber) == 'atnr':
         rnratnr_charmm(open(args.start[0]).readlines(),args.cwd)
     else:
-        sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,True,args.altloc)
+        sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,False,args.altloc)
+        writeca(sca,args.cwd+'/'+sid+'_clean.pdb')
 else:
     logging.info('Fetching PDB files from RCSB database')
     start=getpdb(sid)

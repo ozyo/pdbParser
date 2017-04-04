@@ -41,9 +41,10 @@ class Segsep(object):
             #seg_final=remove_field_name(seg_new,"icode")
             writecharmm(seg_new,cwd+'/seg'+chain.lower()+'.pdb')
         seg_less_wat=self.hoh
-        for name in remove:
-            seg_less_wat=remove_field_name(seg_less_wat,name)
-        seg_id_wat=numpy.lib.recfunctions.append_fields(seg_less_wat, 'segid', ['SEGW']*len(seg_less_wat), dtypes='S4', usemask=False, asrecarray=True)
-        seg_new_wat=replace(seg_id_wat,['HOH'],['TIP3'])
-        #seg_final_wat=remove_field_name(seg_new_wat,"icode")
-        writecharmm(seg_new_wat,cwd+'/segw'+'.pdb')
+        if len(seg_less_wat) > 0:
+            for name in remove:
+                seg_less_wat=remove_field_name(seg_less_wat,name)
+            seg_id_wat=numpy.lib.recfunctions.append_fields(seg_less_wat, 'segid', ['SEGW']*len(seg_less_wat), dtypes='S4', usemask=False, asrecarray=True)
+            seg_new_wat=replace(seg_id_wat,['HOH'],['TIP3'])
+            #seg_final_wat=remove_field_name(seg_new_wat,"icode")
+            writecharmm(seg_new_wat,cwd+'/segw'+'.pdb')
