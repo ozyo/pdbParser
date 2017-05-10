@@ -43,7 +43,6 @@ def renumber(coord,seg):
         resnr=curres[res]
         new=res+1
         location=np.where(changes[coord['segid']==seg]['resnr']==resnr)
-        print location
         changes['resnr'][location[0]]=new
     return changes
 
