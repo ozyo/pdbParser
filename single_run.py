@@ -28,6 +28,8 @@ parser.set_defaults(altloc='A')
 parser.add_argument('--renumber',dest='renumber',help='renumber Water segment residue numbers or renumber atoms; seg or atnr')
 parser.set_defaults(renumber=False)
 parser.add_argument('--segid',dest='segid',help='Segment identifier to renumber')
+parser.add_argument('--rname', dest='rname',help='Renaming of the water segnames, default is False',action='store_true')
+parser.set_defaults(rname=False)
 args=parser.parse_args()
 try:
     sid=args.start[0]
@@ -46,7 +48,7 @@ if args.local is True:
     logging.warning('You have provided PDB files, assuming you have fixed the missing residues.')
     logging.info('Reading PDB files, extracting the core region...')
     if args.charmm is True:
-        sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,True,args.altloc)
+        sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,True,args.altloc,args.rname)
     elif str(args.renumber) == 'seg':
         rnrseg_charmm(open(args.start[0]).readlines(),args.segid,args.cwd)
     elif str(args.renumber) == 'atnr':
@@ -59,7 +61,7 @@ else:
     start=getpdb(sid)
     checkmulti(start)
     logging.info('Processing PDB files')
-    sca=pdbParser(start,sid,args.mer,args.cwd,args.altloc)
+    sca=pdbParser(start,sid,args.mer,args.cwd,args.altloc,args.rname)
     logging.info('Retriving CA coordinates successful')
     if args.charmm is True:
         logging.info('Finished')

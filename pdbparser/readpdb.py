@@ -113,3 +113,30 @@ def coord(atomlines):
     coords=np.array(coords,dtype=('i,S4,S4,S4,S4,i,S4,f,f,f,f,f,S4,S4'))
     coords.dtype.names=('atnr','atname','altloc','resname','ch','resnr','icode','x','y','z','occu','tfact','element','charge')
     return coords
+
+def coordcharm(atomlines):
+    coords=[]
+    for atom in atomlines:
+        atnr=int(atom[6:11].strip())
+        atname=str(atom[12:16].strip())
+        altloc=str(atom[16].strip())
+        resname=str(atom[17:21].strip())
+        ch=str(atom[21])
+        resnr=int(atom[22:26])
+        icode=str(atom[26].strip())
+        x=float(atom[30:38].strip())
+        y=float(atom[38:46].strip())
+        z=float(atom[46:54].strip())
+        try:
+            occu=float(atom[54:60].strip())
+        except ValueError:
+            occu=0.0
+        try:
+            tfact=float(atom[60:66].strip())
+        except ValueError:
+            tfact=0.0
+        segid=str(atom[72:77].strip())
+        coords.append((atnr,atname,altloc,resname,ch,resnr,icode,x,y,z,occu,tfact,segid))
+    coords=np.array(coords,dtype=('i,S4,S4,S4,S4,i,S4,f,f,f,f,f,S4'))
+    coords.dtype.names=('atnr','atname','altloc','resname','ch','resnr','icode','x','y','z','occu','tfact','segid')
+    return coords
