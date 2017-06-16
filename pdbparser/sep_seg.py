@@ -23,10 +23,11 @@ def replace(a,old,new):
 
 class Segsep(object):
     def __init__(self,coord):
-        self.hoh=coord[(coord['resname'] == 'HOH') | (coord['resname'] == 'TIP3')]
-        self.rest=coord[(coord['resname'] != 'HOH') & (coord['resname'] != 'TIP3')]
+        self.hoh=coord[(coord['resname'] == 'HOH') | (coord['resname'] == 'TIP3') | (coord['resname'] == 'SOL')]
+        self.rest=coord[(coord['resname'] != 'HOH') & (coord['resname'] != 'TIP3') | (coord['resname'] != 'SOL') ]
         self.chains=set(self.rest['ch'].tolist())
         print self.chains
+        self.segids=set(coord['segid'].tolist())
     def sep_segs(self,coord,cwd,rname):
         #remove=['element','charge']
         remove=['segid']
@@ -36,7 +37,7 @@ class Segsep(object):
             for name in remove:
                 seg_less=remove_field_name(seg_less,name)
             seg_id=numpy.lib.recfunctions.append_fields(seg_less, 'segid', ['SEG'+chain]*len(seg_less), dtypes='S4', usemask=False, asrecarray=True)
-            old=['DA','DC','DG','DT']
+            old=['A','C','G','T']
             new=['ADE','CYT','GUA','THY']
             seg_new=replace(seg_id,old,new)
             #seg_final=remove_field_name(seg_new,"icode")
@@ -50,6 +51,11 @@ class Segsep(object):
             #seg_final_wat=remove_field_name(seg_new_wat,"icode")
             writecharmm(seg_new_wat,cwd+'/segw'+'.pdb')
         else:
-            print 'kochi kochi'
-            print seg_less_wat[0]
             writecharmm(seg_less_wat,cwd+'/segw'+'.pdb')
+    def sep_bysegids(self,coord,cwd):
+        for segid in self.segids:
+            print segid
+            seg=coord[coord['segid']==segid]
+            print seg[0]
+            writecharmm(seg,cwd+'/'+segid+'.pdb')
+

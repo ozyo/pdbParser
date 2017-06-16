@@ -8,6 +8,7 @@ import numpy.lib.recfunctions
 import os
 from readpdb import readall
 from sep_seg import remove_field_name
+
 def read_charmm(atomlines):
     atomlines=readall(atomlines)
     coords=[]
@@ -43,7 +44,7 @@ def renumber(coord,seg):
         resnr=curres[res]
         new=res+1
         location=np.where(changes[coord['segid']==seg]['resnr']==resnr)
-        changes['resnr'][location[0]]=new
+        changes[changes['segid']==seg]['resnr'][location[0]]=new
     return changes
 
 def renumberatom(coord):

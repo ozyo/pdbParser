@@ -30,6 +30,8 @@ parser.set_defaults(renumber=False)
 parser.add_argument('--segid',dest='segid',help='Segment identifier to renumber')
 parser.add_argument('--rname', dest='rname',help='Renaming of the water segnames, default is False',action='store_true')
 parser.set_defaults(rname=False)
+parser.add_argument('--bysegid', dest='bysegid',help='Write each segment without chain identifier to a seperate file',action='store_true')
+parser.set_defaults(segid=False)
 args=parser.parse_args()
 try:
     sid=args.start[0]
@@ -48,7 +50,7 @@ if args.local is True:
     logging.warning('You have provided PDB files, assuming you have fixed the missing residues.')
     logging.info('Reading PDB files, extracting the core region...')
     if args.charmm is True:
-        sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,True,args.altloc,args.rname)
+        sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,True,args.altloc,args.rname,args.bysegid)
     elif str(args.renumber) == 'seg':
         rnrseg_charmm(open(args.start[0]).readlines(),args.segid,args.cwd)
     elif str(args.renumber) == 'atnr':
