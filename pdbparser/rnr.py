@@ -43,8 +43,10 @@ def renumber(coord,seg):
     for res in range(0,len(curres)):
         resnr=curres[res]
         new=res+1
-        location=np.where(changes[coord['segid']==seg]['resnr']==resnr)
-        changes[changes['segid']==seg]['resnr'][location[0]]=new
+        location=np.where((changes['segid']==seg)&(changes['resnr']==resnr))
+        #changes['resnr'][location[0]]=new
+        print location
+        changes['resnr'][location[0]]=new
     return changes
 
 def renumberatom(coord):
