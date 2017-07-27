@@ -61,11 +61,12 @@ def getaligned(ca1,ca2):
     core2=ca2[(ca2['resnr']>=nter2[2]) & (ca2['resnr']<=cter2[2])]
     if len(core1) == len(core2):
         logging.info('Run successful proceeding with eBDIMS calculation')
+        logging.critical('SUCCESS')
         return core1, core2
     else:
         logging.critical('Different number of atoms.')
         logging.critical('I am not extracting the same region for these structures')
-        logging.critical('Please upload your own to continue. ')
+        logging.critical('Please upload your own structures to continue. ')
         logging.critical('FAIL')
         return core1, core2
         exit()

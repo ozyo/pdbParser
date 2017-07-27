@@ -83,7 +83,7 @@ def readatom(pdb):
             atoms.append(line)
     return atoms
 
-def coord(atomlines,compnd):
+def coord(atomlines):
     coords=[]
     for atom in atomlines:
         atnr=int(atom[6:11].strip())
@@ -103,7 +103,4 @@ def coord(atomlines,compnd):
         coords.append((atnr,atname,altloc,resname,ch,resnr,icode,x,y,z,occu,tfact,element,charge))
     coords=np.array(coords,dtype=('i,S4,S4,S4,S4,i,S4,f,f,f,f,f,S4,S4'))
     coords.dtype.names=('atnr','atname','altloc','resname','ch','resnr','icode','x','y','z','occu','tfact','element','charge')
-    if compnd is None:
-        compnd=[np.unique(coords['ch']).tolist()]
-    filt=coords[np.in1d(coords['ch'],compnd)]
-    return filt
+    return coords
