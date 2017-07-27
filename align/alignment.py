@@ -62,26 +62,36 @@ def getaligned(ca1,ca2):
     if len(core1) == len(core2):
         logging.info('Run successful proceeding with eBDIMS calculation')
         logging.critical('SUCCESS')
-        return core1, core2
+        return core1, core2, True
     else:
         logging.critical('Different number of atoms.')
         logging.critical('I am not extracting the same region for these structures')
         logging.critical('Please upload your own structures to continue. ')
         logging.critical('FAIL')
-        return core1, core2
+        return core1, core2, False
         exit()
         
 
 def multialigned(ca1,ca2,mer):
     whole1=None
     whole2=None
+    correct=[]
     if len(np.unique(ca1['ch'])) == len(np.unique(ca2['ch'])) and len(np.unique(ca1['ch'])) == mer:        
         for a,b in zip(np.unique(ca1['ch']),np.unique(ca2['ch'])):
             cores=getaligned(ca1[ca1['ch']==a],ca2[ca2['ch']==b])
             if whole1 is None:
                 whole1=cores[0]
                 whole2=cores[1]
+                correct.append(cores[2])
             elif whole1 is not None:
                 whole1=np.append(whole1,cores[0],axis=0)
                 whole2=np.append(whole2,cores[1],axis=0)
-    return whole1, whole2
+                correct.append(cores[2])
+    if False in correct:
+        logging.critical('Different number of atoms.')
+        logging.critical('I am not extracting the same region for these structures')
+        logging.critical('Please upload your own structures to continue. ')
+        logging.critical('FAIL')        
+        return whole1, whole2, False
+    if False not in correct:
+        return whole1, whole2, True

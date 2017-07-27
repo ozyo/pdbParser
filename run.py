@@ -49,31 +49,45 @@ def chlistsplit(chlist):
             logging.critical("Please supply the chain ids in these formats: A-E or A-C,E or A,B")
             exit()
     return finlist
+
 schains=chlistsplit(args.schains)
 echains=chlistsplit(args.echains)
 
-outf=args.cwd+'/error.dat'
-logging.basicConfig(level=logging.INFO,filename=outf)
-
-start=getpdb(sid)
-print(start[0])
-checkmulti(start)
-logging.info('Processing PDB files')
-sca=pdbParser(start,sid,args.mer,args.altloc,schains)
-print(sca[0])
-end=getpdb(eid)
-checkmulti(end)
-logging.info('Processing PDB files')
-eca=pdbParser(end,eid,args.mer,args.altloc,echains)
 toAlign=True
 
-if toAlign is True and args.mer == 1:
+outf=args.cwd+'/error.dat'
+logging.basicConfig(level=logging.INFO,filename=outf)
+if args.mer == 1:
+    for ch1,ch2 in zip(schains,echains):
+        start=getpdb(sid)
+        checkmulti(start)
+        logging.info('Processing PDB files')
+        sca=pdbParser(start,sid,args.mer,args.altloc,ch1)
+        end=getpdb(eid)
+        checkmulti(end)
+        logging.info('Processing PDB files')
+        eca=pdbParser(end,eid,args.mer,args.altloc,ch2)
+        logging.info('Extracting the core region.')
+        score,ecore,correct=getaligned(sca,eca)
+        if correct is True:
+            writeca(score,args.cwd+'/start.pdb')
+            writeca(ecore,args.cwd+'/target.pdb')
+            break
+        else:
+            continue
+
+elif args.mer !=1:
+    start=getpdb(sid)
+    checkmulti(start)
+    logging.info('Processing PDB files')
+    sca=pdbParser(start,sid,args.mer,args.altloc,schains)
+    end=getpdb(eid)
+    checkmulti(end)
+    logging.info('Processing PDB files')
+    eca=pdbParser(end,eid,args.mer,args.altloc,echains)
     logging.info('Extracting the core region.')
-    score,ecore=getaligned(sca,eca)
-    writeca(score,args.cwd+'/start.pdb')
-    writeca(ecore,args.cwd+'/target.pdb')
-elif toAlign is True and args.mer !=1:
-    logging.info('Extracting the core region.')
-    score,ecore=multialigned(sca,eca,args.mer)
-    writeca(score,args.cwd+'/start.pdb')
-    writeca(ecore,args.cwd+'/target.pdb')
+    score,ecore,correct=multialigned(sca,eca,args.mer)
+    if correct is True:
+        writeca(score,args.cwd+'/start.pdb')
+        writeca(ecore,args.cwd+'/target.pdb')
+
