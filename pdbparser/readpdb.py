@@ -18,7 +18,9 @@ def getpdb(pdbid):
                 logging.critical('Cannot reach PDB database, unknown error')    
     else:
         logging.info('Trying to open the file')
-        return pdbid.readlines()
+        with open(pdbid,'r') as pdbfile:
+            pdblines=pdbfile.readlines()
+        return pdblines
 
 def checkmulti(pdb):
     for line in pdb:
