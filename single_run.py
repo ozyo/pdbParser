@@ -3,9 +3,9 @@
 from pdbparser.pdbParser import pdbParser
 from pdbparser.readpdb import getpdb
 from pdbparser.readpdb import checkmulti
-from pdbparser.writepdb import writeca
+from pdbparser.writepdb import writeca, writecrysol
 #from align.alignment import getaligned, multialigned
-from pdbparser.pdbParser import pdbParselocal
+from pdbparser.pdbParser import pdbParselocal, pdbParsecrysol
 import argparse
 import logging
 from os import getcwd
@@ -32,9 +32,13 @@ parser.add_argument('--rname', dest='rname',help='Renaming of the water segnames
 parser.set_defaults(rname=False)
 parser.add_argument('--bysegid', dest='bysegid',help='Write each segment without chain identifier to a seperate file',action='store_true')
 parser.set_defaults(segid=False)
+parser.add_argument('--crysol', dest='crysol', help='Write the pdb in correct format with 3 character atomnames',action='store_true')
+parser.set_defaults(segid=False)
+parser.add_argument('--out',dest='out',help='outputname')
 args=parser.parse_args()
 try:
     sid=args.start[0]
+    parser.set_defaults(out=sid)
 #     eid=args.target[0]
 except TypeError:
     parser.print_help()
@@ -55,8 +59,11 @@ if args.local is True:
         rnrseg_charmm(open(args.start[0]).readlines(),args.segid,args.cwd)
     elif str(args.renumber) == 'atnr':
         rnratnr_charmm(open(args.start[0]).readlines(),args.cwd)
+    elif args.crysol is True:
+        sca=pdbParsecrysol(open(args.start[0]).readlines(),args.cwd,args.altloc)
+        writecrysol(sca,args.cwd+'/'+str(args.out))
     else:
-        sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,False,args.altloc)
+        sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,False,args.altloc,args.rname,args.bysegid)
         writeca(sca,args.cwd+'/'+sid+'_clean.pdb')
 else:
     logging.info('Fetching PDB files from RCSB database')

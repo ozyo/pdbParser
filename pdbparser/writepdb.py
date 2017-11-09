@@ -12,3 +12,5 @@ def writecharmm_noicode(div,file):
     np.savetxt(file,div,fmt='ATOM  %5s %-4s%1s%-4s%1s%5s   %8s%8s%8s%6s%6s      %-4s',delimiter='')
     #old form np.savetxt(file,div,fmt='ATOM  %5s %-4s%1s%-4s%1s%-5s   %8s%8s%8s%6s%6s      %-4s',delimiter='')
     # Or something like that
+def writecrysol(div,file):
+    np.savetxt(file,div,fmt='ATOM  %5s  %-3s%1s%3s%1s%4s%1s   %8s%8s%8s%6s%6s          %-2s%2s',delimiter='')

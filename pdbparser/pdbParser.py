@@ -37,3 +37,10 @@ def pdbParselocal(pdb,cwd,charmm,altloc,rname,bysegid):
         else:
             final_segs=segs.sep_segs(ca,cwd,rname)
         return final_segs
+
+def pdbParsecrysol(pdb,cwd,altloc):
+    compnd=None
+    atomlines=readpdb.readatom(pdb)
+    coords=readpdb.coordstrict(atomlines)
+    ca=clean_pdb.getall(coords,altloc)
+    return ca
