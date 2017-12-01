@@ -8,6 +8,7 @@ import numpy.lib.recfunctions
 import os
 from readpdb import readall
 from sep_seg import remove_field_name
+from itertools import groupby
 
 def read_charmm(atomlines):
     atomlines=readall(atomlines)
@@ -37,12 +38,13 @@ def read_charmm(atomlines):
     coords.dtype.names=('atnr','atname','altloc','resname','ch','resnr','x','y','z','occu','tfact','segid')
     return coords
 
-def renumber(coord,seg):
+def renumber(coord,seg,resstart):
     changes=np.copy(coord)
     curres=np.unique(coord[coord['segid']==seg]['resnr'])
-    for res in range(0,len(curres)):
+    unires=[k for k,g in groupby(curres) if k!=0]
+    for res in range(0,len(unires)):
         resnr=curres[res]
-        new=res+1
+        new=resstart+res+1
         location=np.where((changes['segid']==seg)&(changes['resnr']==resnr))
         #changes['resnr'][location[0]]=new
         #print location
@@ -57,10 +59,25 @@ def renumberatom(coord):
     
 def rnrseg_charmm(coord,seg,cwd):
     atoms=read_charmm(coord)
-    #renumbered=remove_field_name(renumber(atoms,seg),'icode')
-    renumbered=renumber(atoms,seg)
-    writecharmm_noicode(renumbered,cwd+'/renumbered.pdb')
-    exit
+    if len(seg)==1:
+        print seg
+        #renumbered=remove_field_name(renumber(atoms,seg),'icode')
+        renumbered=renumber(atoms,seg,0)
+        writecharmm_noicode(renumbered,cwd+'/renumbered.pdb')
+        exit
+    else:
+        segid=0
+        while segid <len(seg):
+            if segid==0:
+                resstart=0
+                renumbered=renumber(atoms,seg[segid],resstart)
+            else:
+                resstart=renumbered[renumbered['segid']==seg[segid-1]]['resnr'][-1]
+                print resstart
+                renumbered=renumber(renumbered,seg[segid],resstart)
+            segid=segid+1
+        writecharmm_noicode(renumbered,cwd+'/renumbered.pdb')
+        exit
 
 def rnratnr_charmm(coord,cwd):
     atoms=read_charmm(coord)
