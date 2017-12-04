@@ -9,6 +9,7 @@ import os
 from readpdb import readall
 from sep_seg import remove_field_name
 from itertools import groupby
+from operator import itemgetter
 
 def read_charmm(atomlines):
     atomlines=readall(atomlines)
@@ -38,17 +39,29 @@ def read_charmm(atomlines):
     coords.dtype.names=('atnr','atname','altloc','resname','ch','resnr','x','y','z','occu','tfact','segid')
     return coords
 
+def check_resnr_dup(location):
+    loc_list=[]
+    for k, g in groupby(enumerate(location), lambda (i, x): i-x):
+        loc_list.append(map(itemgetter(1), g))
+    if len(loc_list) == 1:
+        return loc_list[0]
+    elif len(loc_list) == 2:
+        return loc_list[1]
+    else:
+        'Hey I detected multiple locations, I cannot renumber these set of residues'
+        exit
+
 def renumber(coord,seg,resstart):
     changes=np.copy(coord)
-    curres=np.unique(coord[coord['segid']==seg]['resnr'])
+    #curres=np.unique(coord[coord['segid']==seg]['resnr'])
+    curres=coord[coord['segid']==seg]['resnr']
     unires=[k for k,g in groupby(curres) if k!=0]
     for res in range(0,len(unires)):
-        resnr=curres[res]
-        new=resstart+res+1
+        resnr=unires[res]
+        new=resstart+1+res
         location=np.where((changes['segid']==seg)&(changes['resnr']==resnr))
-        #changes['resnr'][location[0]]=new
-        #print location
-        changes['resnr'][location[0]]=new
+        checkedloc=check_resnr_dup(location[0])
+        changes['resnr'][checkedloc]=new
     return changes
 
 def renumberatom(coord):
@@ -66,15 +79,14 @@ def rnrseg_charmm(coord,seg,cwd):
         writecharmm_noicode(renumbered,cwd+'/renumbered.pdb')
         exit
     else:
+        renumbered=np.copy(atoms)
         segid=0
         while segid <len(seg):
             if segid==0:
                 resstart=0
-                renumbered=renumber(atoms,seg[segid],resstart)
             else:
                 resstart=renumbered[renumbered['segid']==seg[segid-1]]['resnr'][-1]
-                print resstart
-                renumbered=renumber(renumbered,seg[segid],resstart)
+            renumbered=renumber(renumbered,seg[segid],resstart)
             segid=segid+1
         writecharmm_noicode(renumbered,cwd+'/renumbered.pdb')
         exit
