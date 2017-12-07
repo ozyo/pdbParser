@@ -78,96 +78,49 @@ def readatom(pdb):
             atoms.append(line)
     return atoms
 
-def readall(pdb):
-    atoms=[]
+def readhetatm(pdb):
+    hetatoms=[]
     read=False
     for line in pdb:
-        if line.startswith('ATOM') or line.startswith('HETATM'):
-            atoms.append(line)
-    return atoms
+        if line.startswith('HETATM'):
+            hetatoms.append(line)
+    return hetatoms
 
-def coord(atomlines):
+def coord(atomlines,coortype):
+    # This will read the coordinates with no icode
+    # Instead it will use the filed to write residue numbers above 9999
+    # If icode is required read it with decreasing resnr to 26 and adding
+    # an icode field
     coords=[]
     for atom in atomlines:
-        atnr=int(atom[6:11].strip())
+        atnr=str(atom[6:11].strip())
         atname=str(atom[12:16].strip())
         altloc=str(atom[16].strip())
         resname=str(atom[17:21].strip())
         ch=str(atom[21])
-        resnr=int(atom[22:26])
-        icode=str(atom[26].strip())
-        x=float(atom[30:38].strip())
-        y=float(atom[38:46].strip())
-        z=float(atom[46:54].strip())
+        resnr=str(atom[22:27])
+        x=str(atom[30:38].strip())
+        y=str(atom[38:46].strip())
+        z=str(atom[46:54].strip())
         try:
-            occu=float(atom[54:60].strip())
+            occu=str(atom[54:60].strip())
         except ValueError:
             occu=0.0
         try:
-            tfact=float(atom[60:66].strip())
+            tfact=str(atom[60:66].strip())
         except ValueError:
             tfact=0.0
-        element=str(atom[76:78].strip())
-        charge=str(atom[78:80].strip())
-        coords.append((atnr,atname,altloc,resname,ch,resnr,icode,x,y,z,occu,tfact,element,charge))
-    coords=np.array(coords,dtype=('i,S4,S4,S4,S4,i,S4,f,f,f,f,f,S4,S4'))
-    coords.dtype.names=('atnr','atname','altloc','resname','ch','resnr','icode','x','y','z','occu','tfact','element','charge')
-    return coords
-
-def coordcharm(atomlines):
-    coords=[]
-    for atom in atomlines:
-        atnr=int(atom[6:11].strip())
-        atname=str(atom[12:16].strip())
-        altloc=str(atom[16].strip())
-        resname=str(atom[17:21].strip())
-        ch=str(atom[21])
-        resnr=int(atom[22:27])
-        #icode=str(atom[26].strip())
-        x=float(atom[30:38].strip())
-        y=float(atom[38:46].strip())
-        z=float(atom[46:54].strip())
-        try:
-            occu=float(atom[54:60].strip())
-        except ValueError:
-            occu=0.0
-        try:
-            tfact=float(atom[60:66].strip())
-        except ValueError:
-            tfact=0.0
-        segid=str(atom[72:77].strip())
-        coords.append((atnr,atname,altloc,resname,ch,resnr,x,y,z,occu,tfact,segid))
-        #coords.append((atnr,atname,altloc,resname,ch,resnr,icode,x,y,z,occu,tfact,segid))
-    coords=np.array(coords,dtype=('i,S4,S4,S4,S4,i,f,f,f,f,f,S4'))
-    coords.dtype.names=('atnr','atname','altloc','resname','ch','resnr','x','y','z','occu','tfact','segid')
-    #coords=np.array(coords,dtype=('i,S4,S4,S4,S4,i,S4,f,f,f,f,f,S4'))
-    #coords.dtype.names=('atnr','atname','altloc','resname','ch','resnr','icode','x','y','z','occu','tfact','segid')
-    return coords
-
-def coordstrict(atomlines):
-    coords=[]
-    for atom in atomlines:
-        atnr=int(atom[6:11].strip())
-        atname=str(atom[12:16].strip())
-        altloc=str(atom[16].strip())
-        resname=str(atom[17:21].strip())
-        ch=str(atom[21])
-        resnr=int(atom[22:26])
-        icode=str(atom[26].strip())
-        x=float(atom[30:38].strip())
-        y=float(atom[38:46].strip())
-        z=float(atom[46:54].strip())
-        try:
-            occu=float(atom[54:60].strip())
-        except ValueError:
-            occu=0.0
-        try:
-            tfact=float(atom[60:66].strip())
-        except ValueError:
-            tfact=0.0
-        element=str(atom[76:78].strip())
-        charge=str(atom[78:80].strip())
-        coords.append((atnr,atname,altloc,resname,ch,resnr,icode,x,y,z,occu,tfact,element,charge))
-    coords=np.array(coords,dtype=('i,S3,S3,S4,S4,i,S4,f,f,f,f,f,S4,S4'))
-    coords.dtype.names=('atnr','atname','altloc','resname','ch','resnr','icode','x','y','z','occu','tfact','element','charge')
+        if coortype == 'charmm':
+            segid=str(atom[72:77].strip())
+            coords.append((atnr,atname,altloc,resname,ch,resnr,x,y,z,occu,tfact,segid))
+        else:
+            element=str(atom[76:78].strip())
+            charge=str(atom[78:80].strip())
+            coords.append((atnr,atname,altloc,resname,ch,resnr,x,y,z,occu,tfact,element,charge))
+    if coortype == 'charmm':
+        coords=np.array(coords,dtype=('S5,S4,S1,S4,S1,S5,S8,S8,S8,S6,S6,S5'))
+        coords.dtype.names=('atnr','atname','altloc','resname','ch','resnr','x','y','z','occu','tfact','segid')
+    else:
+        coords=np.array(coords,dtype=('S5,S4,S1,S4,S1,S5,S8,S8,S8,S6,S6,S2,S2'))
+        coords.dtype.names=('atnr','atname','altloc','resname','ch','resnr','x','y','z','occu','tfact','element','charge')
     return coords

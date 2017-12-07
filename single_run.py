@@ -3,14 +3,12 @@
 from pdbparser.pdbParser import pdbParser
 from pdbparser.readpdb import getpdb
 from pdbparser.readpdb import checkmulti
-from pdbparser.writepdb import writeca, writecrysol
+from pdbparser.writepdb import write
 #from align.alignment import getaligned, multialigned
-from pdbparser.pdbParser import pdbParselocal, pdbParsecrysol
+from pdbparser.pdbParser import pdbParselocal
 import argparse
 import logging
 from os import getcwd
-from pdbparser.rnr import rnrseg_charmm
-from pdbparser.rnr import rnratnr_charmm
 
 parser = argparse.ArgumentParser(description='Identification of Missing residues')
 parser.add_argument('--start', metavar='PDB Code', nargs=1 , help='Crystal structure from PDB database with the header')
@@ -32,15 +30,13 @@ parser.add_argument('--rname', dest='rname',help='Renaming of the water segnames
 parser.set_defaults(rname=False)
 parser.add_argument('--bysegid', dest='bysegid',help='Write each segment without chain identifier to a seperate file',action='store_true')
 parser.set_defaults(bysegid=False)
-parser.add_argument('--crysol', dest='crysol', help='Write the pdb in correct format with 2 character atomnames',action='store_true')
-parser.set_defaults(crysol=False)
+#parser.add_argument('--crysol', dest='crysol', help='Write the pdb in correct format with 2 character atomnames',action='store_true')
+#parser.set_defaults(crysol=False)
 parser.add_argument('--out',dest='out',help='outputname')
-
 args=parser.parse_args()
 try:
     sid=args.start[0]
-    parser.set_defaults(out=sid)
-#     eid=args.target[0]
+    parser.set_defaults(out=sid+'_processed.pdb')
 except TypeError:
     parser.print_help()
     exit()
@@ -50,20 +46,13 @@ outf=args.cwd+'/error.dat'
 logging.basicConfig(level=logging.CRITICAL,filename=outf)
 
 if args.local is True:
-    logging.warning('You have provided PDB files, assuming you have fixed the missing residues.')
-    logging.info('Reading PDB files, extracting the core region...')
+    #Read the coor
     if args.charmm is True:
-        sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,True,args.altloc,args.rname,args.bysegid)
-    elif str(args.renumber) == 'seg':
-        rnrseg_charmm(open(args.start[0]).readlines(),args.segid,args.cwd)
-    elif str(args.renumber) == 'atnr':
-        rnratnr_charmm(open(args.start[0]).readlines(),args.cwd)
-    elif args.crysol is True:
-        sca=pdbParsecrysol(open(args.start[0]).readlines(),args.cwd,args.altloc)
-        writecrysol(sca,args.cwd+'/'+str(args.out))
+        coortype='charmm'
     else:
-        sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,False,args.altloc,args.rname,args.bysegid)
-        writeca(sca,args.cwd+'/'+sid+'_clean.pdb')
+        coortype='None'
+    sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,coortype,args.altloc,args.rname,args.bysegid,args.renumber,args.segid)
+    write(sca,args.cwd+'/'+args.out,coortype,args.bysegid)
 else:
     logging.info('Fetching PDB files from RCSB database')
     start=getpdb(sid)

@@ -5,6 +5,7 @@ import readpdb, clean_pdb, divide_mer
 import missing, writepdb
 import logging
 from sep_seg import Segsep
+from rnr import replace, rnrseg_charmm, renumberatom
 
 def pdbParser(pdb,pdbid,mer,cwd,altloc,rname,bysegid):
     print pdbid
@@ -19,28 +20,24 @@ def pdbParser(pdb,pdbid,mer,cwd,altloc,rname,bysegid):
     #This is the part where we check the missing residues. I have a feeling we should do this before. But if we want a sequence alignment between two structure and retrive a region automatically for eBDIMS then doing it after is better so that we can also use the remarks and seqres to chop and align the sequences.
     return ca
     
-def pdbParselocal(pdb,cwd,charmm,altloc,rname,bysegid):
-    if charmm is False:
-        compnd=None
-        atomlines=readpdb.readatom(pdb)
-        coords=readpdb.coord(atomlines)
-        ca=clean_pdb.getall(coords,altloc)
-        return ca
-    else:
-        compnd=None
-        atomlines=readpdb.readall(pdb)
-        coords=readpdb.coordcharm(atomlines)
-        ca=clean_pdb.getall(coords,altloc)
-        segs=Segsep(ca)
-        if bysegid is True:
-            final_segs=segs.sep_bysegids(ca,cwd)
-        else:
-            final_segs=segs.sep_segs(ca,cwd,rname)
-        return final_segs
-
-def pdbParsecrysol(pdb,cwd,altloc):
-    compnd=None
+def pdbParselocal(pdb,cwd,coortype,altloc,rname,bysegid,renumber,segids):
     atomlines=readpdb.readatom(pdb)
-    coords=readpdb.coordstrict(atomlines)
+    coords=readpdb.coord(atomlines,coortype)
+    #Cleans alternative location
     ca=clean_pdb.getall(coords,altloc)
+    if bysegid is True:
+        segs=Segsep(ca)
+        ca=segs.sep_segs(ca)
+    if rname is True:
+        old=['A','C','G','T']
+        new=['ADE','CYT','GUA','THY']
+        ca=replace(ca,old,new)
+        ca=rnr.replace(ca,['HOH'],['TIP3'])
+    if renumber == 'seg':
+        ca=rnrseg_charmm(ca,segids)
+        print 'Here'
+    elif renumber == 'atnr':
+        ca=renumberatom(ca)
+    else:
+        ca=ca
     return ca
