@@ -2,10 +2,23 @@
 
 import numpy as np
 
+def crysol_sanity_check(coord):
+    for location, atom in enumerate(coord['atname']):
+        if len(atom) == 1:
+            coord['atname'][location]=atom+' '
+        if len(atom) == 4:
+            coord['atname'][location]=atom[1:3]
+    return coord
+
+            
 def write(coord,file,coortype,bysegid):
     if bysegid is False:
         if coortype == "charmm":
             np.savetxt(file,coord,fmt='ATOM  %5s %-4s%1s%-4s%1s%5s   %8s%8s%8s%6s%6s     %-5s',delimiter='')
+        elif coortype == "crysol":
+            #This is needed to keep the atom name the way crysol likes. '  C ' or '  N1' not 'N1  ' or '   C'
+            coord=crysol_sanity_check(coord)
+            np.savetxt(file,coord,fmt='ATOM  %5s %4s%1s%-4s%1s%5s   %8s%8s%8s%6s%6s     %-5s',delimiter='')
         else:
             np.savetxt(file,coord,fmt='ATOM  %5s %-4s%1s%-4s%1s%5s   %8s%8s%8s%6s%6s          %-2s%2s',delimiter='')
     else:

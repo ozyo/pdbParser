@@ -19,8 +19,8 @@ parser.add_argument('--multimeric', dest='mer', help='If the protein is multimer
 parser.set_defaults(mer=1)
 parser.add_argument('--dir', dest='cwd', help='The directory to save the output files. Default is current work directory.')
 parser.set_defaults(cwd=getcwd())
-parser.add_argument('--charmm', dest='charmm', help='Read and write charmm format, creates segment ids',action='store_true')
-parser.set_defaults(charmm=False)
+parser.add_argument('--coortype', dest='coortype', help='Read and write formats, charmm or charmm crysol, charmm read format creates segment ids',nargs='+')
+parser.set_defaults(coortype=['None','None'])
 parser.add_argument('--altloc', dest='altloc', help='Alternative location to be extracted, default is A')
 parser.set_defaults(altloc='A')
 parser.add_argument('--renumber',dest='renumber',help='renumber Water segment residue numbers or renumber atoms; seg or atnr')
@@ -47,12 +47,10 @@ logging.basicConfig(level=logging.CRITICAL,filename=outf)
 
 if args.local is True:
     #Read the coor
-    if args.charmm is True:
-        coortype='charmm'
-    else:
-        coortype='None'
-    sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,coortype,args.altloc,args.rname,args.bysegid,args.renumber,args.segid,args.bfact)
-    write(sca,args.cwd+'/'+args.out,coortype,args.bysegid)
+    rcoortype=args.coortype[0]
+    wcoortype=args.coortype[1]
+    sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,rcoortype,args.altloc,args.rname,args.bysegid,args.renumber,args.segid,args.bfact)
+    write(sca,args.cwd+'/'+args.out,wcoortype,args.bysegid)
 else:
     logging.info('Fetching PDB files from RCSB database')
     start=getpdb(sid)

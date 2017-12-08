@@ -1,4 +1,4 @@
-pdbParser aims to retrive CA coordinates of the structures deposited at the RCSB data bank. 
+pdbParser aims to retrive CA coordinates of the structures deposited at the RCSB data bank to use with eBDIMs
 
 To make use of these scripts you need to install Python 2.7 and the packages listed below:
 
@@ -10,13 +10,17 @@ To use the standalone version simply run:
 
 This will write two files start and end. These files will contain only the regions that are available in both structures. The core region is extracted via sequence alignment.
 
-There are several issues when automating this process. The issues pdbParser can tackle at the moment are:
-* Mismatches
-* Multiple biological assemblies
+The issues pdbParser can't tackle at the moment are:
+* Multiple biological assemblies (Not even started)
+* PDB Headers could be problematic. Currently the program doesn't support mmCIF records. (Disabled at the moment)
+* Structures with missing residues are not repaired. (I might write a modeller input file)
 
-The support for below issues are currently being implemented:
-* Support for multimeric assemblies (This is partially there. It works until the extraction of the core region)
-* Insertions/deletions will result with partial structures. This is a bit tricky to handle since the gap penalty is set to extreme.
-* PDB Headers could be problematic. Currently the program doesn't support mmCIF records. 
-* Some special cases might require tweaking of the gap penalty. So that the gaps are at the terminus as they should be for partially resolved ones.
-* Structures with missing residues will not be handled. 
+Below cases should give correct structures but caution is needed
+
+* Support for multimeric assemblies 
+* Insertions/deletions may result with partial structures, testing extreme cases but should be resolved. This is a bit tricky to handle since the gap penalty is set to extreme.
+* Mismatches shouldn't create a problem. Each structure's Calpha is extracted.
+
+
+pdbIO branch is for reading and writing CHARMM segments mainly. It will also allow manipulation of the Bfact field, could be useful for eBDIMS or writing NAMD restraints.
+There is one option for writing pdb file in the way CRYSOL likes.
