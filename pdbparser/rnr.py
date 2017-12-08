@@ -2,10 +2,8 @@
 #See COPYING for license 
 
 import numpy as np
-import logging
 import numpy.lib.recfunctions
-import os
-from itertools import groupby
+from itertools import groupby, repeat
 from operator import itemgetter
 
 def check_resnr_dup(location,mode):
@@ -31,7 +29,8 @@ def check_resnr_dup(location,mode):
 
 def renumberseg(coord,seg,resstart):
     #Renumbering is only done based on segid here
-    changes=np.copy(coord)
+    changelock=np.where(coord['segid']==seg)
+    changes=np.copy(coord[coord['segid']==seg])
     #Group by is a better way in case there residues with the same number.
     #curres=np.unique(coord[coord['segid']==seg]['resnr'])
     curres=coord[coord['segid']==seg]['resnr']
@@ -49,7 +48,8 @@ def renumberseg(coord,seg,resstart):
             checkedloc=alloc[0]
             #checkedloc=check_resnr_dup(location[0],2)
         changes['resnr'][checkedloc]=new
-    return changes
+    coord[changelock]=changes
+    return coord
 
 def renumberatom(coord):
     totnr=len(coord)
@@ -57,11 +57,11 @@ def renumberatom(coord):
         coord[atnr]['atnr'] = atnr+1
     return coord
     
-def rnrseg_charmm(coord,seg):
+def rnrseg_charmm(coord,seg,merge):
     if len(seg)==1:
         renumbered=renumberseg(coord,seg,0)
         return renumbered
-    else:
+    elif len(seg) > 1 and merge is True:
         renumbered=np.copy(coord)
         segid=0
         while segid <len(seg):
@@ -72,9 +72,37 @@ def rnrseg_charmm(coord,seg):
             renumbered=renumberseg(renumbered,seg[segid],resstart)
             segid=segid+1
         return renumbered
+    else:
+        renumbered=np.copy(coord)
+        segid=0
+        while segid <len(seg):
+            resstart=0
+            renumbered=renumberseg(renumbered,seg[segid],resstart)
+            segid=segid+1
+        return renumbered
 
 def replace(coor,old,new):                             
     for x,y in zip(old,new):                        
         ind=coor['resname'] == x                       
         coor['resname'][ind] = y                       
     return coor                                        
+
+def addbfact(coor,val):
+    #($resn =~ /CLA/) is excluded
+    reslist=['SOL','HOH','TIP3','SWM4','POT','SOD','CAL','NA','ETOH']
+    restorest=coor['resname'].tolist()
+    for res in reslist:
+        if res in restorest:
+            restorest.remove(res)
+    for res in restorest:
+        location=np.where(coor['resname']==res)
+        coor['tfact'][location]= val
+    # Now put 0 back for drude and lone pair and hydrogen
+    for at in ['H','D','L']:
+        print 'Here'
+        location=np.where(coor['atname'][0:1]==at)
+        print coor['atname']
+        coor[location]['tfact']=0.0
+        # Didn't work
+        #[np.flatnonzero(np.char.find(coor['atname'][0:][0][0:1],at)!=-1)]=0.0
+    return coor

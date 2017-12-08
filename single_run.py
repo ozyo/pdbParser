@@ -19,7 +19,7 @@ parser.add_argument('--multimeric', dest='mer', help='If the protein is multimer
 parser.set_defaults(mer=1)
 parser.add_argument('--dir', dest='cwd', help='The directory to save the output files. Default is current work directory.')
 parser.set_defaults(cwd=getcwd())
-parser.add_argument('--charmm', dest='charmm', help='Write charmm segments',action='store_true')
+parser.add_argument('--charmm', dest='charmm', help='Read and write charmm format, creates segment ids',action='store_true')
 parser.set_defaults(charmm=False)
 parser.add_argument('--altloc', dest='altloc', help='Alternative location to be extracted, default is A')
 parser.set_defaults(altloc='A')
@@ -30,8 +30,8 @@ parser.add_argument('--rname', dest='rname',help='Renaming of the water segnames
 parser.set_defaults(rname=False)
 parser.add_argument('--bysegid', dest='bysegid',help='Write each segment without chain identifier to a seperate file',action='store_true')
 parser.set_defaults(bysegid=False)
-#parser.add_argument('--crysol', dest='crysol', help='Write the pdb in correct format with 2 character atomnames',action='store_true')
-#parser.set_defaults(crysol=False)
+parser.add_argument('--bfact', dest='bfact', help='Add Bfactors, i.e. for restraints in NAMD',action='store_true')
+parser.set_defaults(bfact=False)
 parser.add_argument('--out',dest='out',help='outputname')
 args=parser.parse_args()
 try:
@@ -51,7 +51,7 @@ if args.local is True:
         coortype='charmm'
     else:
         coortype='None'
-    sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,coortype,args.altloc,args.rname,args.bysegid,args.renumber,args.segid)
+    sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,coortype,args.altloc,args.rname,args.bysegid,args.renumber,args.segid,args.bfact)
     write(sca,args.cwd+'/'+args.out,coortype,args.bysegid)
 else:
     logging.info('Fetching PDB files from RCSB database')
