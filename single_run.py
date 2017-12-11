@@ -32,15 +32,26 @@ parser.add_argument('--bysegid', dest='bysegid',help='Write each segment without
 parser.set_defaults(bysegid=False)
 parser.add_argument('--bfact', dest='bfact', help='Add Bfactors, i.e. for restraints in NAMD',action='store_true')
 parser.set_defaults(bfact=False)
-parser.add_argument('--out',dest='out',help='outputname')
+parser.add_argument('--out',dest='out',help='outputname',type=str)
+parser.add_argument('--merge',dest='merge',help='Merging the segment numbering together, default is false',action='store_true')
+parser.set_defaults(merge=False)
+
 args=parser.parse_args()
+
 try:
     sid=args.start[0]
-    parser.set_defaults(out=sid+'_processed.pdb')
 except TypeError:
     parser.print_help()
     exit()
 print args.cwd
+
+if args.out is None:
+    out=sid+'_processed.pdb'
+else:
+    out=args.out
+
+if len(args.coortype) == 1:
+    args.coortype.append(args.coortype[0])
 
 outf=args.cwd+'/error.dat'
 logging.basicConfig(level=logging.CRITICAL,filename=outf)
@@ -49,8 +60,8 @@ if args.local is True:
     #Read the coor
     rcoortype=args.coortype[0]
     wcoortype=args.coortype[1]
-    sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,rcoortype,args.altloc,args.rname,args.bysegid,args.renumber,args.segid,args.bfact)
-    write(sca,args.cwd+'/'+args.out,wcoortype,args.bysegid)
+    sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,rcoortype,args.altloc,args.rname,args.bysegid,args.renumber,args.segid,args.bfact,args.merge)
+    write(sca,args.cwd+'/'+out,wcoortype,args.bysegid)
 else:
     logging.info('Fetching PDB files from RCSB database')
     start=getpdb(sid)

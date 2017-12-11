@@ -111,7 +111,7 @@ def coord(atomlines,coortype):
         except ValueError:
             tfact=0.0
         if coortype == 'charmm':
-            segid=str(atom[71:77].strip())
+            segid=str(atom[72:77].strip())
             coords.append((atnr,atname,altloc,resname,ch,resnr,x,y,z,occu,tfact,segid))
         else:
             element=str(atom[76:78].strip())
