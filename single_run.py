@@ -23,9 +23,10 @@ parser.add_argument('--coortype', dest='coortype', help='Read and write formats,
 parser.set_defaults(coortype=['None','None'])
 parser.add_argument('--altloc', dest='altloc', help='Alternative location to be extracted, default is A')
 parser.set_defaults(altloc='A')
-parser.add_argument('--renumber',dest='renumber',help='renumber Water segment residue numbers or renumber atoms; seg or atnr')
+parser.add_argument('--renumber',dest='renumber',help='renumber Water segment residue numbers or renumber atoms; seg or atnr or chain ids')
 parser.set_defaults(renumber=False)
 parser.add_argument('--segid',dest='segid',help='Segment identifier to renumber',nargs='+')
+parser.add_argument('--chains',dest='chains',help='Chain identifier to renumber',nargs='+')
 parser.add_argument('--rname', dest='rname',help='Renaming of the water segnames, default is False',action='store_true')
 parser.set_defaults(rname=False)
 parser.add_argument('--bysegid', dest='bysegid',help='Write each segment without chain identifier to a seperate file',action='store_true')
@@ -60,7 +61,7 @@ if args.local is True:
     #Read the coor
     rcoortype=args.coortype[0]
     wcoortype=args.coortype[1]
-    sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,rcoortype,args.altloc,args.rname,args.bysegid,args.renumber,args.segid,args.bfact,args.merge)
+    sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,rcoortype,args.altloc,args.rname,args.bysegid,args.renumber,args.segid,args.bfact,args.merge,args.chains)
     write(sca,args.cwd+'/'+out,wcoortype,args.bysegid)
 else:
     logging.info('Fetching PDB files from RCSB database')

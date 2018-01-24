@@ -27,19 +27,19 @@ def check_resnr_dup(location,mode):
             loc_list.append(map(itemgetter(1), g))
             return loc_list
 
-def renumberseg(coord,seg,resstart):
-    #Renumbering is only done based on segid here
-    changelock=np.where(coord['segid']==seg)
-    changes=np.copy(coord[coord['segid']==seg])
+def renumberseg(coord,segtype,seg,resstart):
+    #Renumbering is only done based on segid or chain here
+    changelock=np.where(coord[segtype]==seg)
+    changes=np.copy(coord[coord[segtype]==seg])
     #Group by is a better way in case there residues with the same number.
     #curres=np.unique(coord[coord['segid']==seg]['resnr'])
-    curres=coord[coord['segid']==seg]['resnr']
+    curres=coord[coord[segtype]==seg]['resnr']
     unires=[k for k,g in groupby(curres) if k!=0]
     alreadypassed=[]
     for res in range(0,len(unires)):
         resnr=unires[res]
         new=resstart+1+res
-        location=np.where((changes['segid']==seg)&(changes['resnr']==resnr))
+        location=np.where((changes[segtype]==seg)&(changes['resnr']==resnr))
         alloc=check_resnr_dup(location[0],1)
         if alloc[0] in alreadypassed:
             checkedloc=alloc[1]
@@ -59,7 +59,7 @@ def renumberatom(coord):
     
 def rnrseg_charmm(coord,seg,merge):
     if len(seg)==1:
-        renumbered=renumberseg(coord,seg,0)
+        renumbered=renumberseg(coord,'segid',seg,0)
         return renumbered
     elif len(seg) > 1 and merge is True:
         renumbered=np.copy(coord)
@@ -69,7 +69,7 @@ def rnrseg_charmm(coord,seg,merge):
                 resstart=0
             else:
                 resstart=renumbered[renumbered['segid']==seg[segid-1]]['resnr'][-1]
-            renumbered=renumberseg(renumbered,seg[segid],resstart)
+            renumbered=renumberseg(renumbered,'segid',seg[segid],resstart)
             segid=segid+1
         return renumbered
     else:
@@ -77,8 +77,32 @@ def rnrseg_charmm(coord,seg,merge):
         segid=0
         while segid <len(seg):
             resstart=0
-            renumbered=renumberseg(renumbered,seg[segid],resstart)
+            renumbered=renumberseg(renumbered,'segid',seg[segid],resstart)
             segid=segid+1
+        return renumbered
+
+def rnrch(coord,chains,merge):
+    if len(chains)==1:
+        renumbered=renumberch(coord,'ch',chains,0)
+        return renumbered
+    elif len(chains) > 1 and merge is True:
+        renumbered=np.copy(coord)
+        chid=0
+        while chid <len(chains):
+            if chid==0:
+                resstart=0
+            else:
+                resstart=renumbered[renumbered['ch']==chains[chid-1]]['resnr'][-1]
+            renumbered=renumberch(renumbered,'ch',chains[chgid],resstart)
+            chid=chid+1
+        return renumbered
+    else:
+        renumbered=np.copy(coord)
+        chid=0
+        while chid <len(chains):
+            resstart=0
+            renumbered=renumberseg(renumbered,'ch',chains[chid],resstart)
+            chid=chid+1
         return renumbered
 
 def replace(coor,old,new):                             
