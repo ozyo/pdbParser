@@ -5,7 +5,7 @@ import readpdb, clean_pdb, divide_mer
 import missing, writepdb
 import logging
 from sep_seg import Segsep
-from rnr import replace, rnrseg_charmm, renumberatom, addbfact , rnrch
+from rnr import replace, rnrseg_charmm, renumberatom, addbfact , rnrch, removedrude
 
 def pdbParser(pdb,pdbid,mer,cwd,altloc,rname,bysegid):
     print pdbid
@@ -20,12 +20,19 @@ def pdbParser(pdb,pdbid,mer,cwd,altloc,rname,bysegid):
     #This is the part where we check the missing residues. I have a feeling we should do this before. But if we want a sequence alignment between two structure and retrive a region automatically for eBDIMS then doing it after is better so that we can also use the remarks and seqres to chop and align the sequences.
     return ca
     
-def pdbParselocal(pdb,cwd,coortype,altloc,rname,bysegid,renumber,segids,bfact,merge,chains):
+def pdbParselocal(pdb,cwd,coortype,altloc,rname,bysegid,renumber,segids,bfact,merge,chains,drude):
     atomlines=readpdb.readatom(pdb)
     coords=readpdb.coord(atomlines,coortype)
     #Cleans alternative location
     ca=clean_pdb.getall(coords,altloc)
-    if bysegid is True:
+    if drude is True:
+        ca=removedrude(ca)
+    if bysegid is True and coortype == 'pdb':
+        #if len(ca['segid']) > 1:
+        #    pass
+        #else:
+        #    segs=Segsep(ca)
+        #    ca=segs.sep_segs(ca)
         segs=Segsep(ca)
         ca=segs.sep_segs(ca)
     if rname is True:

@@ -36,7 +36,8 @@ parser.set_defaults(bfact=False)
 parser.add_argument('--out',dest='out',help='outputname',type=str)
 parser.add_argument('--merge',dest='merge',help='Merging the segment numbering together, default is false',action='store_true')
 parser.set_defaults(merge=False)
-
+parser.add_argument('--drude',dest='drude',help='Remove drudes and lonepairs from the output, no renumbering is done!',action='store_true')
+parser.set_defaults(drude=False)
 args=parser.parse_args()
 
 try:
@@ -61,7 +62,7 @@ if args.local is True:
     #Read the coor
     rcoortype=args.coortype[0]
     wcoortype=args.coortype[1]
-    sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,rcoortype,args.altloc,args.rname,args.bysegid,args.renumber,args.segid,args.bfact,args.merge,args.chains)
+    sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,rcoortype,args.altloc,args.rname,args.bysegid,args.renumber,args.segid,args.bfact,args.merge,args.chains,args.drude)
     write(sca,args.cwd+'/'+out,wcoortype,args.bysegid)
 else:
     logging.info('Fetching PDB files from RCSB database')

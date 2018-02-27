@@ -123,10 +123,15 @@ def addbfact(coor,val):
         coor['tfact'][location]= val
     # Now put 0 back for drude and lone pair and hydrogen
     for at in ['H','D','L']:
-        print 'Here'
         location=np.where(coor['atname'][0:1]==at)
         print coor['atname']
         coor[location]['tfact']=0.0
         # Didn't work
         #[np.flatnonzero(np.char.find(coor['atname'][0:][0][0:1],at)!=-1)]=0.0
     return coor
+
+def removedrude(coor):
+    atlist=('D','L','OM')
+    ind=[ not item.startswith(atlist) for item in coor['atname'] ]
+    newcoor=coor[ind]
+    return newcoor

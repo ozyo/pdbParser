@@ -8,11 +8,12 @@ def crysol_sanity_check(coord):
             coord['atname'][location]=atom+'  '
         elif len(atom) == 2:
             coord['atname'][location]=atom+' '
-        elif len(atom) == 4:
-            coord['atname'][location]=atom[1:3]
+        # This is a bit dangerous, for crysol I should be removing the drudes for analysis.
+        # So remove it for now. Otherwise things are named the same altough they are not!
+        #elif len(atom) == 4:
+        #    coord['atname'][location]=atom[1:3]
     return coord
 
-            
 def write(coord,file,coortype,bysegid):
     if bysegid is False:
         with open(file,'w') as output:
