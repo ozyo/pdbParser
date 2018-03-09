@@ -111,8 +111,7 @@ def replace(coor,old,new):
         coor['resname'][ind] = y                       
     return coor                                        
 
-def addbfact(coor,val):
-    #($resn =~ /CLA/) is excluded
+def addbfact(coor,val,btype):
     reslist=['SOL','HOH','TIP3','SWM4','POT','SOD','CAL','NA','ETOH']
     restorest=coor['resname'].tolist()
     for res in reslist:
@@ -121,13 +120,11 @@ def addbfact(coor,val):
     for res in restorest:
         location=np.where(coor['resname']==res)
         coor['tfact'][location]= val
-    # Now put 0 back for drude and lone pair and hydrogen
-    for at in ['H','D','L']:
-        location=np.where(coor['atname'][0:1]==at)
-        print coor['atname']
-        coor[location]['tfact']=0.0
-        # Didn't work
-        #[np.flatnonzero(np.char.find(coor['atname'][0:][0][0:1],at)!=-1)]=0.0
+    if btype is 'heavy':
+        for at in ['H','D','L']:
+            location=np.where(coor['atname'][0:1]==at)
+            print coor['atname']
+            coor[location]['tfact']=0.0
     return coor
 
 def removedrude(coor):

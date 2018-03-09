@@ -17,7 +17,7 @@ def remove_field_name(a, name):
 class Segsep(object):
     def __init__(self,coord):
         self.hoh=coord[(coord['resname'] == 'HOH') | (coord['resname'] == 'TIP3') | (coord['resname'] == 'SOL')]
-        self.rest=coord[(coord['resname'] != 'HOH') & (coord['resname'] != 'TIP3') | (coord['resname'] != 'SOL') ]
+        self.rest=coord[(coord['resname'] != 'HOH') & (coord['resname'] != 'TIP3') & (coord['resname'] != 'SOL') ]
         self.chains=set(self.rest['ch'].tolist())
         try:
             len(self.rest['segid'])
