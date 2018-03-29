@@ -27,8 +27,10 @@ parser.add_argument('--renumber',dest='renumber',help='renumber Water segment re
 parser.set_defaults(renumber=False)
 parser.add_argument('--segid',dest='segid',help='Segment identifier to renumber',nargs='+')
 parser.add_argument('--chains',dest='chains',help='Chain identifier to renumber',nargs='+')
-parser.add_argument('--rname', dest='rname',help='Renaming of the water segnames, default is False',action='store_true')
+parser.add_argument('--rname', dest='rname',help='Renaming of the water segnames, and bases to Charmm values default is False',action='store_true')
 parser.set_defaults(rname=False)
+parser.add_argument('--namena', dest='namena',help='Renaming of bases with 3, 2 or 1 letter code. 3l is ADE, 2l is DA, 1l is A.',nargs=1)
+parser.set_defaults(namena='0l')
 parser.add_argument('--bysegid', dest='bysegid',help='Write each segment without chain identifier to a seperate file',action='store_true')
 parser.set_defaults(bysegid=False)
 parser.add_argument('--bfact', dest='bfact', help='Add Bfactors, i.e. for restraints in NAMD',action='store_true')
@@ -66,7 +68,7 @@ if args.local is True:
     #Read the coor
     rcoortype=args.coortype[0]
     wcoortype=args.coortype[1]
-    sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,rcoortype,args.altloc,args.rname,args.bysegid,args.renumber,args.segid,args.bfact,args.merge,args.chains,args.drude,args.bfact_nr,args.bfact_type)
+    sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,rcoortype,args.altloc,args.rname,args.bysegid,args.renumber,args.segid,args.bfact,args.merge,args.chains,args.drude,args.bfact_nr,args.bfact_type,args.namena)
     write(sca,args.cwd+'/'+out,wcoortype,args.bysegid)
 else:
     logging.info('Fetching PDB files from RCSB database')

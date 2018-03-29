@@ -20,7 +20,7 @@ def pdbParser(pdb,pdbid,mer,cwd,altloc,rname,bysegid):
     #This is the part where we check the missing residues. I have a feeling we should do this before. But if we want a sequence alignment between two structure and retrive a region automatically for eBDIMS then doing it after is better so that we can also use the remarks and seqres to chop and align the sequences.
     return ca
     
-def pdbParselocal(pdb,cwd,coortype,altloc,rname,bysegid,renumber,segids,bfact,merge,chains,drude,bfact_nr,bfact_type):
+def pdbParselocal(pdb,cwd,coortype,altloc,rname,bysegid,renumber,segids,bfact,merge,chains,drude,bfact_nr,bfact_type,namena):
     atomlines=readpdb.readatom(pdb)
     coords=readpdb.coord(atomlines,coortype)
     #Cleans alternative location
@@ -53,4 +53,27 @@ def pdbParselocal(pdb,cwd,coortype,altloc,rname,bysegid,renumber,segids,bfact,me
         ca=ca
     if bfact is True:
         ca=addbfact(ca,bfact_nr,bfact_type)
+
+    if namena[0] == '3l':
+        old=['A','C','G','T']
+        new=['ADE','CYT','GUA','THY']
+        ca=replace(ca,old,new)
+        old=['DA','DC','DG','DT']
+        new=['ADE','CYT','GUA','THY']
+        ca=replace(ca,old,new)
+    elif namena[0] == '2l':
+        old=['A','C','G','T']
+        new=['DA','DC','DG','DT']
+        ca=replace(ca,old,new)
+        old=['ADE','CYT','GUA','THY']
+        new=['DA','DC','DG','DT']
+        ca=replace(ca,old,new)
+    elif namena[0] == '1l':
+        new=['A','C','G','T']
+        old=['DA','DC','DG','DT']
+        ca=replace(ca,old,new)
+        old=['ADE','CYT','GUA','THY']
+        new=['A','C','G','T']
+        ca=replace(ca,old,new)
+
     return ca
