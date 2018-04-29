@@ -5,6 +5,7 @@ import numpy as np
 import numpy.lib.recfunctions
 from itertools import groupby, repeat
 from operator import itemgetter
+from string import ascii_uppercase
 
 def check_resnr_dup(location,mode):
     if mode == 2:
@@ -59,7 +60,7 @@ def renumberatom(coord):
     
 def rnrseg_charmm(coord,seg,merge):
     if len(seg)==1:
-        renumbered=renumberseg(coord,'segid',seg,0)
+        renumbered=renumberseg(coord,'segid',0) #Add support for a custom number 
         return renumbered
     elif len(seg) > 1 and merge is True:
         renumbered=np.copy(coord)
@@ -83,7 +84,7 @@ def rnrseg_charmm(coord,seg,merge):
 
 def rnrch(coord,chains,merge):
     if len(chains)==1:
-        renumbered=renumberch(coord,'ch',chains,0)
+        renumbered=renumberseg(coord,'ch',chains,106) #IDeally this should be the residue number, not resnr-1 change it
         return renumbered
     elif len(chains) > 1 and merge is True:
         renumbered=np.copy(coord)
@@ -93,7 +94,7 @@ def rnrch(coord,chains,merge):
                 resstart=0
             else:
                 resstart=renumbered[renumbered['ch']==chains[chid-1]]['resnr'][-1]
-            renumbered=renumberch(renumbered,'ch',chains[chgid],resstart)
+            renumbered=renumberseg(renumbered,'ch',chains[chgid],resstart)
             chid=chid+1
         return renumbered
     else:
@@ -132,3 +133,22 @@ def removedrude(coor):
     ind=[ not item.startswith(atlist) for item in coor['atname'] ]
     newcoor=coor[ind]
     return newcoor
+
+def unilist(seq): 
+   # order preserving
+   checked = []
+   for e in seq:
+       if e not in checked:
+           checked.append(e)
+   return checked
+
+def addchid(coor):
+    seglist=unilist(coor['segid'].tolist())
+    totch=len(seglist)
+    chids=list(ascii_uppercase)[0:totch]
+    for i in range(0,totch):
+        seg=seglist[i]
+        ch=chids[i]
+        location=np.where(coor['segid']==seg)
+        coor['ch'][location]=ch
+    return coor
