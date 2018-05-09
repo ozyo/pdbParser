@@ -78,10 +78,12 @@ if args.local is True:
     else:
         #For now this is broken but there should be functions to convert the array between coord types.
         #Attempt in fixing this. One might want to add the segids before processing file, support for that will come later
-        if wcoortype == 'charmm':
+        if wcoortype == 'charmm' and args.bysegid is False:
             segs=Segsep(sca)
             sca=segs.add_segid(sca)
             print sca[0]
+            write(sca,args.cwd+'/'+out,wcoortype,args.bysegid)
+        else:
             write(sca,args.cwd+'/'+out,wcoortype,args.bysegid)
 else:
     logging.info('Fetching PDB files from RCSB database')

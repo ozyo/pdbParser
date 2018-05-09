@@ -60,7 +60,8 @@ def renumberatom(coord):
     
 def rnrseg_charmm(coord,seg,merge):
     if len(seg)==1:
-        renumbered=renumberseg(coord,'segid',0) #Add support for a custom number 
+        print seg
+        renumbered=renumberseg(coord,'segid',seg,0) #Add support for a custom number 
         return renumbered
     elif len(seg) > 1 and merge is True:
         renumbered=np.copy(coord)
@@ -84,7 +85,7 @@ def rnrseg_charmm(coord,seg,merge):
 
 def rnrch(coord,chains,merge):
     if len(chains)==1:
-        renumbered=renumberseg(coord,'ch',chains,106) #IDeally this should be the residue number, not resnr-1 change it
+        renumbered=renumberseg(coord,'ch',chains,0) #IDeally this should be the residue number, not resnr-1 change it
         return renumbered
     elif len(chains) > 1 and merge is True:
         renumbered=np.copy(coord)
