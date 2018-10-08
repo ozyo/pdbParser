@@ -48,6 +48,8 @@ parser.add_argument('--drude',dest='drude',help='Remove drudes and lonepairs fro
 parser.set_defaults(drude=False)
 parser.add_argument('--addchid',dest='chid',help='Adding chainids to each segment, starts from A',action='store_true')
 parser.set_defaults(chid=False)
+parser.add_argument('--reord',dest='reord',help='Reorder segments',action='store_true')
+parser.set_defaults(reord=False)
 args=parser.parse_args()
 
 try:
@@ -72,7 +74,7 @@ if args.local is True:
     #Read the coor
     rcoortype=args.coortype[0]
     wcoortype=args.coortype[1]
-    sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,rcoortype,args.altloc,args.rname,args.bysegid,args.renumber,args.segid,args.bfact,args.merge,args.chains,args.drude,args.bfact_nr,args.bfact_type,args.namena,args.chid)
+    sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,rcoortype,args.altloc,args.rname,args.bysegid,args.renumber,args.segid,args.bfact,args.merge,args.chains,args.drude,args.bfact_nr,args.bfact_type,args.namena,args.chid,args.reord)
     if rcoortype == wcoortype:
         write(sca,args.cwd+'/'+out,wcoortype,args.bysegid)
     else:
@@ -81,7 +83,6 @@ if args.local is True:
         if wcoortype == 'charmm' and args.bysegid is False:
             segs=Segsep(sca)
             sca=segs.add_segid(sca)
-            print sca[0]
             write(sca,args.cwd+'/'+out,wcoortype,args.bysegid)
         else:
             write(sca,args.cwd+'/'+out,wcoortype,args.bysegid)
