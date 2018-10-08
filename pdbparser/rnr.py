@@ -52,6 +52,7 @@ def renumberseg(coord,segtype,seg,resstart):
         if alloc[0] in alreadypassed:
             checkedloc=alloc[1]
         else:
+            # I sense an issue with this part. I might have been luck that the residues don't have the same number.
             alreadypassed.append(alloc[0])
             checkedloc=alloc[0]
         changes['resnr'][checkedloc]=new
