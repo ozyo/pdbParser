@@ -24,42 +24,31 @@ def checkmulti(pdb):
             exit()
         else:
             pass
-def readcompnd(pdb):
-    compnd=None
+def gatherinfo(pdb):
+    compnd=[]
     compndlist=[]
-    molin=[]
+    molin={}
     read=False
     for line in pdb:
         if 'COMPND' in line:
             compndlist.append(line[10:-1].strip())
     for line in compndlist:
         if line.startswith('MOL_ID:'):
-            molin.append(compndlist.index(line))
-    if len(molin) >2:
-        logging.critical('Current version cannot handle this pdb file.')
-        logging.critical('Please provide your input files')
-    elif len(molin) == 2:
-        molid=1
-        molid1=compndlist[molin[0]:molin[1]] 
-        molid2=compndlist[molin[1]:-1]
-        checks=['DNA','RNA','5\'','3\'']
-        for line in molid1:
-            if any(s in line for s in checks):
-                molid=2
-        if molid == 1:
-            for line in molid1:
-                if 'CHAIN:' in line:
-                    compnd=[i.strip().strip(';') for i in line.split(':')[1].split(',')]
-        else:
-            for line in molid2:
-                if 'CHAIN:' in line:
-                    compnd=[i.strip().strip(';') for i in line.split(':')[1].split(',')]
-    else:
-        for line in compndlist:
-            if 'CHAIN:' in line:
-                compnd=[i.strip().strip(';') for i in line.split(':')[1].split(',')]
-    return compnd
-
+            mol=line.split()[-1]
+            loc=compndlist.index(line)
+            molin[mol]=loc
+    totmol=len(molin.keys())
+    for i in range (0,totmol):
+        ranges=molin[i]+1
+        try:
+            rangee=molin[i+1]
+        except ValueError:
+            rangee=-1
+        molinfo=compndlist[ranges:rangee]
+        print molinfo
+    compnd=np.array(compnd,dtype=('S2,S25,S25,S3'))
+    compnd.dtype.names=('molid','title','chains','mutation')
+    
 def readremark(pdb,compnd):
     remark=[]
     read=False
