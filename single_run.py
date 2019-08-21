@@ -9,6 +9,8 @@ from pdbparser.pdbParser import pdbParselocal
 import argparse
 import logging
 from os import getcwd
+from pdbparser.sep_seg import Segsep
+
 
 parser = argparse.ArgumentParser(description='Identification of Missing residues')
 parser.add_argument('--start', metavar='PDB Code', nargs=1 , help='Crystal structure from PDB database with the header')
@@ -44,6 +46,10 @@ parser.add_argument('--merge',dest='merge',help='Merging the segment numbering t
 parser.set_defaults(merge=False)
 parser.add_argument('--drude',dest='drude',help='Remove drudes and lonepairs from the output, no renumbering is done!',action='store_true')
 parser.set_defaults(drude=False)
+parser.add_argument('--addchid',dest='chid',help='Adding chainids to each segment, starts from A',action='store_true')
+parser.set_defaults(chid=False)
+parser.add_argument('--reord',dest='reord',help='Reorder segments',action='store_true')
+parser.set_defaults(reord=False)
 args=parser.parse_args()
 
 try:
@@ -68,8 +74,18 @@ if args.local is True:
     #Read the coor
     rcoortype=args.coortype[0]
     wcoortype=args.coortype[1]
-    sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,rcoortype,args.altloc,args.rname,args.bysegid,args.renumber,args.segid,args.bfact,args.merge,args.chains,args.drude,args.bfact_nr,args.bfact_type,args.namena)
-    write(sca,args.cwd+'/'+out,wcoortype,args.bysegid)
+    sca=pdbParselocal(open(args.start[0]).readlines(),args.cwd,rcoortype,args.altloc,args.rname,args.bysegid,args.renumber,args.segid,args.bfact,args.merge,args.chains,args.drude,args.bfact_nr,args.bfact_type,args.namena,args.chid,args.reord)
+    if rcoortype == wcoortype:
+        write(sca,args.cwd+'/'+out,wcoortype,args.bysegid)
+    else:
+        #For now this is broken but there should be functions to convert the array between coord types.
+        #Attempt in fixing this. One might want to add the segids before processing file, support for that will come later
+        if wcoortype == 'charmm' and args.bysegid is False:
+            segs=Segsep(sca)
+            sca=segs.add_segid(sca)
+            write(sca,args.cwd+'/'+out,wcoortype,args.bysegid)
+        else:
+            write(sca,args.cwd+'/'+out,wcoortype,args.bysegid)
 else:
     logging.info('Fetching PDB files from RCSB database')
     start=getpdb(sid)

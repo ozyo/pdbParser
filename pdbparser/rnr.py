@@ -5,6 +5,7 @@ import numpy as np
 import numpy.lib.recfunctions
 from itertools import groupby, repeat
 from operator import itemgetter
+from string import ascii_uppercase
 
 def check_resnr_dup(location,mode):
     if mode == 2:
@@ -19,7 +20,7 @@ def check_resnr_dup(location,mode):
         elif len(loc_list) == 2:
             return loc_list[1]
         else:
-            'Hey I detected multiple locations, I cannot renumber these set of residues'
+            print('Hey I detected multiple locations, I cannot renumber these set of residues')
             exit
     elif mode == 1:
         loc_list=[]
@@ -36,17 +37,24 @@ def renumberseg(coord,segtype,seg,resstart):
     curres=coord[coord[segtype]==seg]['resnr']
     unires=[k for k,g in groupby(curres) if k!=0]
     alreadypassed=[]
+    if not unires:
+        print('Something is odd, did you give the correct segid or perhaps there is no segid or chid that you specified in the pdb!')
+        exit
+    if len(unires) > 99999:
+        print('Using hexadecimal to change the numbers in the residues since it is higher than 99999')
     for res in range(0,len(unires)):
         resnr=unires[res]
-        new=resstart+1+res
+        new=int(resstart)+1+res
+        if new > 99999:
+            new=hex(new)[1:-1]
         location=np.where((changes[segtype]==seg)&(changes['resnr']==resnr))
         alloc=check_resnr_dup(location[0],1)
         if alloc[0] in alreadypassed:
             checkedloc=alloc[1]
         else:
+            # I sense an issue with this part. I might have been luck that the residues don't have the same number.
             alreadypassed.append(alloc[0])
             checkedloc=alloc[0]
-            #checkedloc=check_resnr_dup(location[0],2)
         changes['resnr'][checkedloc]=new
     coord[changelock]=changes
     return coord
@@ -59,7 +67,8 @@ def renumberatom(coord):
     
 def rnrseg_charmm(coord,seg,merge):
     if len(seg)==1:
-        renumbered=renumberseg(coord,'segid',seg,0)
+        print seg
+        renumbered=renumberseg(coord,'segid',seg,0) #Add support for a custom number 
         return renumbered
     elif len(seg) > 1 and merge is True:
         renumbered=np.copy(coord)
@@ -83,7 +92,7 @@ def rnrseg_charmm(coord,seg,merge):
 
 def rnrch(coord,chains,merge):
     if len(chains)==1:
-        renumbered=renumberch(coord,'ch',chains,0)
+        renumbered=renumberseg(coord,'ch',chains,0) #IDeally this should be the residue number, not resnr-1 change it
         return renumbered
     elif len(chains) > 1 and merge is True:
         renumbered=np.copy(coord)
@@ -93,7 +102,7 @@ def rnrch(coord,chains,merge):
                 resstart=0
             else:
                 resstart=renumbered[renumbered['ch']==chains[chid-1]]['resnr'][-1]
-            renumbered=renumberch(renumbered,'ch',chains[chgid],resstart)
+            renumbered=renumberseg(renumbered,'ch',chains[chid],resstart)
             chid=chid+1
         return renumbered
     else:
@@ -132,3 +141,32 @@ def removedrude(coor):
     ind=[ not item.startswith(atlist) for item in coor['atname'] ]
     newcoor=coor[ind]
     return newcoor
+
+def unilist(seq): 
+   # order preserving
+   checked = []
+   for e in seq:
+       if e not in checked:
+           checked.append(e)
+   return checked
+
+def addchid(coor):
+    try:
+        seglist=unilist(coor['segid'].tolist())
+        totch=len(seglist)
+        chids=list(ascii_uppercase)[0:totch]
+        for i in range(0,totch):
+            seg=seglist[i]
+            ch=chids[i]
+            location=np.where(coor['segid']==seg)
+            coor['ch'][location]=ch
+    except ValueError:
+        totch=1
+        coor['ch']='A'
+    return coor
+
+def reordseg(coord):
+    segs=unilist(coord['segid'].tolist())
+    coord=sort(coord,order='segid')
+    return coord
+

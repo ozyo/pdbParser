@@ -16,6 +16,7 @@ def remove_field_name(a, name):
 
 class Segsep(object):
     def __init__(self,coord):
+        self.whole=coord
         self.hoh=coord[(coord['resname'] == 'HOH') | (coord['resname'] == 'TIP3') | (coord['resname'] == 'SOL')]
         self.rest=coord[(coord['resname'] != 'HOH') & (coord['resname'] != 'TIP3') & (coord['resname'] != 'SOL') ]
         self.chains=set(self.rest['ch'].tolist())
@@ -23,7 +24,13 @@ class Segsep(object):
             len(self.rest['segid'])
             self.segids=set(self.rest['segid'].tolist())
         except ValueError:
-            'No segments'
+            'No segments found will create a new array with segment field and transfer the coordinates'
+        try:
+            len(self.rest['segid'])
+            self.segids=set(self.rest['segid'].tolist())
+        except ValueError:
+            'No segments found will create a new array with segment field and transfer the coordinates'
+        
         self.coorsegs=np.empty_like(coord)
         remove=['element','charge']
         for name in remove:
@@ -31,7 +38,7 @@ class Segsep(object):
         self.coorsegs=numpy.lib.recfunctions.append_fields(self.coorsegs, 'segid',[]*len(self.coorsegs), dtypes='S5', usemask=False, asrecarray=True)
         if len(self.chains) == 0:
             self.chains=['A']
-            print 'Hey no chain found, I set everything to A'
+            print 'Hey no chain found, I set everything to A, your segid will SEGA'
         
     def sep_segs(self,coord):
         try:
@@ -55,3 +62,18 @@ class Segsep(object):
             return self.coorsegs
         else:
             return coord
+
+    def add_segid(self,coord):
+        try:
+            self.segids
+        except AttributeError:
+            remove=['element','charge']
+            for chain in self.chains:
+                seg_ch=self.whole[self.whole['ch']==chain]
+                seg_less=seg_ch
+                for name in remove:
+                    seg_less=remove_field_name(seg_less,name)
+                seg_id=numpy.lib.recfunctions.append_fields(seg_less, 'segid', ['SEG'+chain]*len(seg_less), dtypes='S5', usemask=False, asrecarray=True)
+                self.coorsegs=np.concatenate((self.coorsegs,seg_id))
+            self.coorsegs=self.coorsegs[self.coorsegs['segid']!='N/A']
+            return self.coorsegs

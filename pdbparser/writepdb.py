@@ -15,14 +15,20 @@ def crysol_sanity_check(coord):
     return coord
 
 def write(coord,file,coortype,bysegid):
+    print "Writing coordinates"
     if bysegid is False:
         with open(file,'w') as output:
             if coortype == "charmm":
                 np.savetxt(output,coord,fmt='ATOM  %5s %-4s%1s%-4s%1s%5s   %8s%8s%8s%6s%6s      %-5s',delimiter='')
             elif coortype == "crysol":
                 #This is needed to keep the atom name the way crysol likes. '  C ' or '  N1' not 'N1  ' or '   C'
+                print "Writing crysol format"
                 coord=crysol_sanity_check(coord)
                 np.savetxt(output,coord,fmt='ATOM  %5s %4s%1s%-4s%1s%5s   %8s%8s%8s%6s%6s     %-5s',delimiter='')
+            elif coortype == "rosetta":
+                print "A pdb format with 4 character residue number"
+                coord=crysol_sanity_check(coord)
+                np.savetxt(output,coord,fmt='ATOM  %5s %4s%1s%-4s%1s%4s    %8s%8s%8s%6s%6s          %-2s%2s',delimiter='')
             else:
                 coord=crysol_sanity_check(coord)
                 np.savetxt(output,coord,fmt='ATOM  %5s %4s%1s%-4s%1s%5s   %8s%8s%8s%6s%6s          %-2s%2s',delimiter='')
