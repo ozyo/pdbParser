@@ -38,6 +38,6 @@ def write(coord,file,coortype,bysegid):
         segids=np.unique(coord['segid'])
         for seg in segids:
             to_write=coord[coord['segid']==seg]
-            with open(seg.lower()+'.pdb','w') as output:
+            with open(file+'_'+seg.lower()+'.pdb','w') as output:
                 np.savetxt(output,to_write,fmt='ATOM  %5s %-4s%1s%-4s%1s%5s   %8s%8s%8s%6s%6s      %-5s',delimiter='')
                 np.savetxt(output,np.array('END').reshape(1,),fmt='%3s',delimiter='s')

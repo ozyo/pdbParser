@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 
-from pdbparser.pdbParser import pdbParser
-from pdbparser.readpdb import getpdb
-from pdbparser.readpdb import checkmulti
-from pdbparser.writepdb import write
+from pdbParser.pdbParser import pdbParser
+from pdbParser.readpdb import getpdb
+from pdbParser.readpdb import checkmulti
+from pdbParser.writepdb import write
 #from align.alignment import getaligned, multialigned
-from pdbparser.pdbParser import pdbParselocal
+from pdbParser.pdbParser import pdbParselocal
 import argparse
 import logging
 from os import getcwd
-from pdbparser.sep_seg import Segsep
+from pdbParser.sep_seg import Segsep
 
 
 parser = argparse.ArgumentParser(description='Identification of Missing residues')
