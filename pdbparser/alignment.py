@@ -101,7 +101,7 @@ def getaligned(ca1,ca2):
     sca2,mapca2=getseq(ca2)
     #Grabs the first alignment
     aligned=align(sca1,sca2)[0]
-    print aligned
+    print(aligned)
     aca1=list(aligned[0])
     aca2=list(aligned[1])
     shift1=findgap(aca1)

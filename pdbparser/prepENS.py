@@ -1,14 +1,14 @@
 import requests
 import logging
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import sys,os
 import numpy as np
-import pdbParser as pP
-import writepdb as wp
-import clean_pdb as cp
-import alignment as a
-reload (a)
-reload(pP)
+from pdbParser import pdbParser as pP
+from pdbParser import writepdb as wp
+from pdbParser import clean_pdb as cp
+from pdbParser import alignment as a
+#reload (a)
+#reload(pP)
 
 class PDBInfo():
     def __init__(self,query,mer,exclude=None):
@@ -45,8 +45,7 @@ class PDBInfo():
                         logging.info('Removing PDB ID %s' %ex)
                 except KeyError:
                     logging.warning('Did not find the PDB ID %s' %ex)
-
-            chainids={z.split(';')[1].strip():z.split(';')[4].split('=')[0].strip() for z in [i for i in urllib.urlopen(URLbase+self.query+'.txt').readlines() if i.startswith('DR   PDB;')] if z.split()[3] not in ['NMR;','model;']}
+            chainids={z.split(';')[1].strip():z.split(';')[4].split('=')[0].strip() for z in [i for i in urllib.request.urlopen(URLbase+self.query+'.txt').read().decode('utf-8').splitlines() if i.startswith('DR   PDB;')] if z.split()[3] not in ['NMR;','model;']}
         else:
             logging.critical('Cannot retrive the information for query number %s' %(self.query))
             return(None,None)
@@ -64,7 +63,7 @@ class PDBInfo():
                 elif nchain > self.mer:
                     if nchain % self.mer == 0:
                         newchains=[]
-                        for chnr in xrange(0,nchain,self.mer):
+                        for chnr in range(0,nchain,self.mer):
                             newchains.append(chains[chnr:chnr+self.mer])
                             count=count+1
                         returninfo[pdb]=[count,newchains]
@@ -91,8 +90,8 @@ def downloadPDB(info,cwd):
     outseq=open(cwd+'/'+info.seqfilename,'w')
     outresmap=open(cwd+'/'+info.residmapfilename,'w')
     outseq.write('>refseq'+'\n'+refseq+'\n')
-    for pdb in pdblist.keys():
-        urllib.urlretrieve('http://files.rcsb.org/download/%s.pdb' %pdb, cwd+'/'+pdb+'.pdb')
+    for pdb in list(pdblist.keys()):
+        urllib.request.urlretrieve('http://files.rcsb.org/download/%s.pdb' %pdb, cwd+'/'+pdb+'.pdb')
         #time.sleep(-1)
         for mol in range(0,pdblist[pdb][0]):
             pdblines=open(cwd+'/'+pdb+'.pdb').readlines()
@@ -111,7 +110,7 @@ def downloadPDB(info,cwd):
                 ca=cp.getca(coord,altloc,ch)
                 seq,map=a.getseq(ca)
                 outseq.write('>'+pdb+'_'+str(mol+1)+'.pdb'+'|'+ch+'|'+'\n'+seq+'\n')
-                code,name,nr=zip(*map)
+                code,name,nr=list(zip(*map))
                 outresmap.write('>'+pdb+'_'+str(mol+1)+'.pdb'+'|'+ch+'|'+'\n'+'-'.join([str(i) for i in nr])+'\n')
         os.remove(cwd+'/'+pdb+'.pdb')
     outseq.close()

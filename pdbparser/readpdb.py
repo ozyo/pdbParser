@@ -3,16 +3,16 @@
 
 #We need to read quite a bit of information from the REMARKS lines. So it is better to keep them in a seperate module.
 import numpy as np
-import urllib2 
+import urllib.request, urllib.error, urllib.parse 
 import logging
 
 def getpdb(pdbid):
     if len(pdbid) == 4:
         try:
-            urlib2.urlretrieve('http://files.rcsb.org/download/%s.pdb' %pdbid, pdbid+'.pdb')
+            urllib.request.urlretrieve('http://files.rcsb.org/download/%s.pdb' %pdbid, pdbid+'.pdb')
             pdblines=open(pdbid+'.pdb','r').readlines()
             return pdblines
-        except urllib2.HTTPError as err:
+        except urllib.error.HTTPError as err:
             if err.code == 404:
                 logging.critical('PDB code not found')
             else:
@@ -30,7 +30,7 @@ def checkmulti(pdb):
             count+=1
     if count > 1:
         logging.critical('Current version cannot handle multipdb files.')
-        exit()
+        return None
 
 def findchains(pdb):
     compnd=None
@@ -94,20 +94,20 @@ def coord(atomlines):
     coords=[]
     for atom in atomlines:
         atnr=int(atom[6:11].strip())
-        atname=str(atom[12:16].strip())
-        altloc=str(atom[16].strip())
-        resname=str(atom[17:20].strip())
-        ch=str(atom[21])
+        atname=atom[12:16].strip()
+        altloc=atom[16].strip()
+        resname=atom[17:20].strip()
+        ch=atom[21]
         resnr=int(atom[22:26])
-        icode=str(atom[26].strip())
+        icode=atom[26].strip()
         x=float(atom[30:38].strip())
         y=float(atom[38:46].strip())
         z=float(atom[46:54].strip())
         occu=float(atom[54:60].strip())
         tfact=float(atom[60:66].strip())
-        element=str(atom[76:78].strip())
-        charge=str(atom[78:80].strip())
+        element=atom[76:78].strip()
+        charge=atom[78:80].strip()
         coords.append((atnr,atname,altloc,resname,ch,resnr,icode,x,y,z,occu,tfact,element,charge))
-    coords=np.array(coords,dtype=('i,S4,S4,S4,S4,i,S4,f,f,f,f,f,S4,S4'))
+    coords=np.array(coords,dtype=('i,U4,U4,U4,U4,i,U4,f,f,f,f,f,U4,U4'))
     coords.dtype.names=('atnr','atname','altloc','resname','ch','resnr','icode','x','y','z','occu','tfact','element','charge')
     return coords

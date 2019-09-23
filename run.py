@@ -81,7 +81,7 @@ def chlistsplit(chlist):
     if args.mer > len(finlist):
         if len(finlist) % args.mer == 0:
             moldivision=[]
-            for i in xrange(0,len(finliist),args.mer):
+            for i in range(0,len(finliist),args.mer):
                 moldivision.append(finlist[i:i+args.mer])
             return moldivision
         else:

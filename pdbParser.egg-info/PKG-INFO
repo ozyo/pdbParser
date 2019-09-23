@@ -8,6 +8,6 @@ Author-email: ozgeyoluk@proteinart.net
 License: UNKNOWN
 Description: UNKNOWN
 Platform: UNKNOWN
-Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3.7
 Classifier: LICENSE :: OSI APPROVED :: GNU GENERAL PUBLIC LICENSE V3 (GPLV3)
 Classifier: Operating System :: OS Independent

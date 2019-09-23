@@ -30,9 +30,9 @@ def missinginfo(r465,chlist,ca):
     #This is to set the remaining chains as broken. 
     # Perhaps modifying the loop would help, but when the below commands are within the first *if* loop chain info is overwritten. 
     for ch in flatchlist:
-        if ch not in missinginfo.keys():
+        if ch not in list(missinginfo.keys()):
             missinginfo[ch]=1
-    if all(ch == 0 for ch in missinginfo.values()) is True:
+    if all(ch == 0 for ch in list(missinginfo.values())) is True:
         return None
     else:
         return missinginfo

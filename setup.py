@@ -10,7 +10,7 @@ setup(
     url="https://github.com/ozyo/pdbParser",
     install_requires=["numpy","biopython","requests","argparse"],
     classifiers=[
-        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.7",
         "LICENSE :: OSI APPROVED :: GNU GENERAL PUBLIC LICENSE V3 (GPLV3)",
         "Operating System :: OS Independent",
     ]
