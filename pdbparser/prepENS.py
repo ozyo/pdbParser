@@ -3,11 +3,13 @@ import logging
 import urllib.request, urllib.parse, urllib.error
 import sys,os
 import numpy as np
+from importlib import reload
 from pdbParser import pdbParser as pP
+reload(pP)
 from pdbParser import writepdb as wp
 from pdbParser import clean_pdb as cp
 from pdbParser import alignment as a
-#reload (a)
+reload (a)
 #reload(pP)
 
 class PDBInfo():
@@ -80,16 +82,101 @@ class PDBInfo():
                 pdbids.remove(pdb)
         return(returninfo,refseq)
 
+class multiPDBInfo():
+    def __init__(self,querylist,mer,tag,exclude=None):
+        self.exclude=exclude
+        self.querylist=querylist
+        self.tag=tag
+        self.mer=mer
+        self.result,self.refseq=self.get_pdbinfo_multi()
+        self.broken=None
+        self.seqfilename=self.tag+'_seq.txt'
+        self.residmapfilename=self.tag+'_residmap.txt'
+        self.alnfasta=self.tag+'_init.aln.txt'
+        self.coremer=None
+        self.coreresids=None
 
-def downloadPDB(info,cwd):
-    query=info.query
+    def get_pdbinfo_multi(self):
+        URLbase = ('http://www.uniprot.org/uniprot/')
+        fullpdblist={}
+        fullrefseqs={}
+        for query in self.querylist:
+            idparam = {
+                'query': 'ID:{}'.format(query),
+                'format': 'tab',
+                'columns': 'database(PDB),sequence'
+            }
+
+            result1 = requests.get(URLbase,params=idparam).text
+            if len(result1) > 0:
+                pdbids,refseq=result1.split('\n')[1].split('\t')
+                refseq=str(refseq)
+                fullrefseqs[query]=refseq
+                pdbids=['{}'.format(i) for i in pdbids.split(';') if len(i)>1]
+                if self.exclude is not None:
+                    try:
+                        for ex in self.exclude:
+                            pdbids.remove(ex)
+                            logging.info('Removing PDB ID %s' %ex)
+                    except KeyError:
+                        logging.warning('Did not find the PDB ID %s' %ex)
+
+                chainids={z.split(';')[1].strip():z.split(';')[4].split('=')[0].strip() for z in [i for i in urllib.request.urlopen(URLbase+query+'.txt').read().decode('utf-8').splitlines() if i.startswith('DR   PDB;')] if z.split()[3] not in ['NMR;','model;']}
+            else:
+                logging.critical('Cannot retrive the information for query number %s' %(query))
+                return(None,None)
+            for pdb in pdbids:
+                try:
+                    fullpdblist[pdb]
+                except KeyError:
+                    fullpdblist[pdb]=chainids[pdb]
+                else:
+                    fullpdblist[pdb]=fullpdblist[pdb]+'/'+chainids[pdb]
+
+        returninfo={}
+        for pdb in list(fullpdblist.keys()):
+            print(pdb,fullpdblist[pdb])
+            try:
+                count=0
+                try:
+                    chains=fullpdblist[pdb].split('/')
+                except AttributeError:
+                    continue
+                nchain=len(chains)
+                if nchain == self.mer:
+                    returninfo[pdb]=[count+1,[chains]]
+                elif nchain > self.mer:
+                    if nchain % self.mer == 0:
+                        newchains=[]
+                        for chnr in range(0,nchain,self.mer):
+                            newchains.append(chains[chnr:chnr+self.mer])
+                            count=count+1
+                        returninfo[pdb]=[count,newchains]
+                    else:
+                        logging.critical('Cannot process PDB id %s. It does not contain complete set' %pdb)
+                        fullpdblist.pop(pdb)
+                else:
+                    logging.critical('Cannot process PDB id %s. It does not contain complete set' %pdb)
+                    fullpdblist.pop(pdb)
+            except KeyError:
+                logging.warning('PDB ID %s is either an NMR structure or a model. Skipping' %pdb)
+                fullpdblist.pop(pdb)
+        return(returninfo,fullrefseqs)
+
+
+def downloadPDB(info,cwd,multiseq=False):
+    query=info.query if not multiseq else info.querylist
     pdblist=info.result
     mer=info.mer
     refseq=info.refseq
     altloc="A"
     outseq=open(cwd+'/'+info.seqfilename,'w')
     outresmap=open(cwd+'/'+info.residmapfilename,'w')
-    outseq.write('>refseq'+'\n'+refseq+'\n')
+    if multiseq:
+        for query in refseq.keys():
+            outseq.write('>refseq_'+query+'\n'+refseq[query]+'\n')
+    else:
+        outseq.write('>refseq'+'\n'+refseq+'\n')
     for pdb in list(pdblist.keys()):
         urllib.request.urlretrieve('http://files.rcsb.org/download/%s.pdb' %pdb, cwd+'/'+pdb+'.pdb')
         #time.sleep(-1)
@@ -116,8 +203,8 @@ def downloadPDB(info,cwd):
     outseq.close()
     outresmap.close()
 
-def msa(info,cwd,clustalopath,alnf=None):
-    query=info.query
+def msa(info,cwd,clustalopath,alnf=None,multiseq=False):
+    query=info.query if not multiseq else info.tag
     seqfile=info.seqfilename
     resmap=info.residmapfilename
     merinfo=info.result
