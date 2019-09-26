@@ -83,6 +83,24 @@ class PDBInfo():
                 pdbids.remove(pdb)
         return(returninfo,refseq)
 
+    def core_show(self,positions=[]):
+        alndata,alncomment=a.parse_fasta_aln_multi(self.alnfasta)
+        self.alndata=alndata
+        if len(positions)==2:
+            alndata=self.alndata.iloc[:,positions[0]:positions[-1]]
+        elif len(positions) == 0:
+            pass
+        else:
+            logging.error('Please provide a start and an end number in a list')
+            return None
+        #def here_block(s,se):
+        #    return ['background-color: yellow' if v in se else '' for v in s.index]
+        def here_gap(val):
+            color='red' if val == '-' else ''
+            return 'background-color: %s' % color    
+        styled=alndata.style.applymap(here_gap)
+        return(styled)
+
 class multiPDBInfo():
     def __init__(self,querylist,mer,tag,exclude=None):
         self.exclude=exclude
@@ -136,7 +154,6 @@ class multiPDBInfo():
 
         returninfo={}
         for pdb in list(fullpdblist.keys()):
-            print(pdb,fullpdblist[pdb])
             try:
                 count=0
                 try:
@@ -267,7 +284,6 @@ def getcore(info,cwd,multiseq=False):
     if multiseq:
         fulllist=[]
         for key,val in info.core_blocks.items():
-            print(val)
             fulllist=fulllist+val
         filtresid=resids.iloc[:,fulllist]
 

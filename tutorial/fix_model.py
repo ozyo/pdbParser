@@ -6,7 +6,7 @@ from myloop import MyLoop #MODIFY THIS CLASS TOO!!!!!
 #Example taken from :
 #https://salilab.org/modeller/manual/node35.html
 
-#log.verbose()
+log.none()
 env = environ()
 
 env.io.atom_files_directory = ['.', '../atom_files']
