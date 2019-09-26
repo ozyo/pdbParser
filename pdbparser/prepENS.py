@@ -9,6 +9,7 @@ reload(pP)
 from pdbParser import writepdb as wp
 from pdbParser import clean_pdb as cp
 from pdbParser import alignment as a
+import pandas as pd
 reload (a)
 #reload(pP)
 
@@ -163,6 +164,38 @@ class multiPDBInfo():
                 fullpdblist.pop(pdb)
         return(returninfo,fullrefseqs)
 
+    def core_show(self,seqs=['ref','struct'],positions=[],blocks=[]):
+        if seqs == ['ref','struct']:
+            filt=pd.concat([self.refseqaln,self.structaln])
+        elif seqs == ['struct']:
+            filt=self.structaln
+        elif seqs == ['ref']:
+            filt=self.refseqaln
+        else:
+            logging.error('Please choose from ["ref","struct"] or one of them ["ref"], ["struct"]')
+            return None
+        if len(blocks)==0:
+            blocks=self.core_blocks.keys()
+        else:
+            blocks=blocks
+        if len(positions)==2:
+            filt=filt.iloc[:,positions[0]:positions[-1]]
+        elif len(positions) == 0:
+            filt=filt
+        else:
+            logging.error('Please provide a start and an end number in a list')
+            return None
+        se=[]
+        for block in blocks:
+            se=se+self.core_blocks[block]
+        def here_block(s,se):
+            return ['background-color: yellow' if v in se else '' for v in s.index]
+        def here_gap(val):
+            color='red' if val == '-' else ''
+            return 'background-color: %s' % color    
+        styled=filt.style.apply(here_block,se=se,axis=1).applymap(here_gap)
+        return(styled)
+
 
 def downloadPDB(info,cwd,multiseq=False):
     query=info.query if not multiseq else info.querylist
@@ -203,25 +236,39 @@ def downloadPDB(info,cwd,multiseq=False):
     outseq.close()
     outresmap.close()
 
-def msa(info,cwd,clustalopath,alnf=None,multiseq=False):
+def msa(info,cwd,clustalopath,alnf=None,multiseq=False,updates=False,cores=None):
     query=info.query if not multiseq else info.tag
-    seqfile=info.seqfilename
-    resmap=info.residmapfilename
+    if multiseq and not alnf:
+        logging.error('If using multiple UniProt IDs, profile alignment file is necesseary.')
+        return(None)
+    seqfile=cwd+'/'+info.seqfilename
+    resmap=cwd+'/'+info.residmapfilename
     merinfo=info.result
     totmer=info.mer
     outfile=cwd+'/'+info.alnfasta
-    seqfile=cwd+'/'+seqfile
-    complete,resids,broken=a.msa_clustal(seqfile,resmap,outfile,clustalopath,cwd,merinfo,query,totmer,alnf)
+    if not multiseq:
+        complete,resids,broken=a.msa_clustal(seqfile,resmap,outfile,clustalopath,cwd,merinfo,query,totmer,alnf)
+    else:
+        complete,resids,broken,refaln,structaln,blocks=a.aln_struct_to_core(alnf,outfile,seqfile,resmap,cwd,merinfo,query,totmer,clustalopath,updates=updates,cores=cores)
+        info.refseqaln=refaln
+        info.structaln=structaln
+        info.core_blocks=blocks
     info.broken=broken
     info.coremer=complete
     info.coreresids=resids
     
-def getcore(info,cwd):
+def getcore(info,cwd,multiseq=False):
     altloc='A'
     complete=info.coremer
     resids=info.coreresids
     broken=info.broken
     totmer=info.mer
+    if multiseq:
+        fulllist=[]
+        for block in info.core_blocks.values():
+            fulllist=fulllist+block
+        filtresid=resids.iloc[:,fulllist]
+
     for pdb in complete:
         if pdb in broken:
             try:
@@ -238,10 +285,17 @@ def getcore(info,cwd):
         ca=pP.pdbParser(pdblines,pdb,totmer,altloc,[chains])
         newca=None
         for ch in chains:
-            nter,cter=[int(i) for i in resids[pdb+'|'+ch+'|']]
-            if newca is None:
-                newca=ca[(ca['ch']==ch)&(ca['resnr']>=nter) & (ca['resnr']<=cter)]
+            if not multiseq:
+                nter,cter=[int(i) for i in resids[pdb+'|'+ch+'|']]
+                if newca is None:
+                    newca=ca[(ca['ch']==ch)&(ca['resnr']>=nter) & (ca['resnr']<=cter)]
+                else:
+                    newca=np.concatenate([newca,ca[(ca['ch']==ch)&(ca['resnr']>=nter) & (ca['resnr']<=cter)]])
             else:
-                newca=np.concatenate([newca,ca[(ca['ch']==ch)&(ca['resnr']>=nter) & (ca['resnr']<=cter)]])
+                tmp=list(filtresid.loc[[pdb+'|'+ch+'|']])[:-1]
+                if newca is None:
+                    newca=ca[(ca['ch']==ch)&([True if r in tmp else False for r in ca['resnr']])]
+                else:
+                    newca=np.concatenate([newca,ca[(ca['ch']==ch)&([True if r in tmp else False for r in ca['resnr']])]])
         wp.writeca(newca,cwd+'/'+'correct_'+pdb)
         os.remove(cwd+'/'+pdb)

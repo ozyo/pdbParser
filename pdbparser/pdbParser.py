@@ -9,7 +9,7 @@ def pdbTitle(pdb):
         if 'TITLE' in line:
             titles.append(line)
     for i in titles:
-        if any(True for x in ['CHIMERA','FUSED','CHIMERIC','chimeric','chimera'] if x in i):
+        if any(True for x in ['fused','chimeric','chimera','chimaeric'] if x in i.lower()):
             return True 
         else:
             return False
