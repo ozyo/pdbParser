@@ -252,7 +252,8 @@ def msa(info,cwd,clustalopath,alnf=None,multiseq=False,updates=False,cores=None)
         complete,resids,broken,refaln,structaln,blocks=a.aln_struct_to_core(alnf,outfile,seqfile,resmap,cwd,merinfo,query,totmer,clustalopath,updates=updates,cores=cores)
         info.refseqaln=refaln
         info.structaln=structaln
-        info.core_blocks=blocks
+        if not updates:
+            info.core_blocks=blocks
     info.broken=broken
     info.coremer=complete
     info.coreresids=resids
@@ -265,8 +266,9 @@ def getcore(info,cwd,multiseq=False):
     totmer=info.mer
     if multiseq:
         fulllist=[]
-        for block in info.core_blocks.values():
-            fulllist=fulllist+block
+        for key,val in info.core_blocks.items():
+            print(val)
+            fulllist=fulllist+val
         filtresid=resids.iloc[:,fulllist]
 
     for pdb in complete:
@@ -292,10 +294,10 @@ def getcore(info,cwd,multiseq=False):
                 else:
                     newca=np.concatenate([newca,ca[(ca['ch']==ch)&(ca['resnr']>=nter) & (ca['resnr']<=cter)]])
             else:
-                tmp=list(filtresid.loc[[pdb+'|'+ch+'|']])[:-1]
+                tmp=filtresid.loc[pdb+'|'+ch+'|'].to_list()
                 if newca is None:
-                    newca=ca[(ca['ch']==ch)&([True if r in tmp else False for r in ca['resnr']])]
+                    newca=ca[(ca['ch']==ch)&np.in1d(ca['resnr'], tmp)]
                 else:
-                    newca=np.concatenate([newca,ca[(ca['ch']==ch)&([True if r in tmp else False for r in ca['resnr']])]])
+                    newca=np.concatenate([newca,ca[(ca['ch']==ch)&np.in1d(ca['resnr'], tmp)]])
         wp.writeca(newca,cwd+'/'+'correct_'+pdb)
         os.remove(cwd+'/'+pdb)
