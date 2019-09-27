@@ -1,11 +1,14 @@
 README.md
+pdbParser
+pdbParser-cmd
 setup.py
 pdbParser/__init__.py
 pdbParser/alignment.py
+pdbParser/chorder.py
 pdbParser/clean_pdb.py
 pdbParser/divide_mer.py
 pdbParser/missing.py
-pdbParser/pdbParser.py
+pdbParser/parser.py
 pdbParser/prepENS.py
 pdbParser/readpdb.py
 pdbParser/writepdb.py

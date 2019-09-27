@@ -4,14 +4,11 @@ import urllib.request, urllib.parse, urllib.error
 import sys,os
 import numpy as np
 from importlib import reload
-from pdbParser import pdbParser as pP
-reload(pP)
+from pdbParser import parser as pP
 from pdbParser import writepdb as wp
 from pdbParser import clean_pdb as cp
 from pdbParser import alignment as a
 import pandas as pd
-reload (a)
-#reload(pP)
 
 class PDBInfo():
     def __init__(self,query,mer,exclude=None):
@@ -240,7 +237,7 @@ def downloadPDB(info,cwd,multiseq=False):
                 except KeyError:
                     logging.info('This structure was already removed. I am an example of bad programming. Nothing to worry about')
                     continue
-            coord=pP.pdbParser(pdblines,pdb,mer,altloc,[pdblist[pdb][1][mol]])
+            coord=pP.parse_ca(pdblines,pdb,mer,altloc,[pdblist[pdb][1][mol]])
             coord=cp.getca(coord,altloc,[pdblist[pdb][1][mol]])
             wp.writeca(coord,cwd+'/'+pdb+'_'+str(mol+1)+'.pdb')
             for ch in pdblist[pdb][1][mol]:
@@ -300,7 +297,7 @@ def getcore(info,cwd,multiseq=False):
         except (OSError,IOError):
             logging.warning('File does not exist: '+pdb+' skipped')
             continue
-        ca=pP.pdbParser(pdblines,pdb,totmer,altloc,[chains])
+        ca=pP.parse_ca(pdblines,pdb,totmer,altloc,[chains])
         newca=None
         for ch in chains:
             if not multiseq:

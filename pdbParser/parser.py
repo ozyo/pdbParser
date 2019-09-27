@@ -1,8 +1,6 @@
 #See COPYING for license 
 
-from urllib2 import urlopen
-import readpdb, clean_pdb, divide_mer
-import missing, writepdb
+from pdbParser import readpdb, clean_pdb
 import logging
 
 def pdbTitle(pdb):
@@ -11,12 +9,12 @@ def pdbTitle(pdb):
         if 'TITLE' in line:
             titles.append(line)
     for i in titles:
-        if 'CHIMERA' in i or 'FUSED' in i:
+        if any(True for x in ['fused','chimeric','chimera','chimaeric'] if x in i.lower()):
             return True 
         else:
             return False
 
-def pdbParser(pdb,pdbid,mer,altloc,chlist):
+def parse_ca(pdb,pdbid,mer,altloc,chlist):
     logging.info('Retriving CA coordinates')
     logging.info('Checking for missing residues')
     atomlines=readpdb.readatom(pdb)

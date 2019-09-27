@@ -2,3 +2,4 @@ numpy
 biopython
 requests
 argparse
+pandas
