@@ -52,9 +52,6 @@ if args.prepENS is not None and args.mer is not None:
     pE.msa(info,cwd,clustal)
     pE.getcore(info,cwd)
     exit()
-else:
-    argsparser.print_help()
-    exit()
 
 def chlistsplit(chlist):
     finlist=[]

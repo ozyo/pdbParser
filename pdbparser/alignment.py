@@ -18,11 +18,12 @@ matrix = matlist.blosum62
 
 def getseq(ca):
     seq=letter("".join(ca['resname'].tolist()))
-    resmap=zip(list(seq),ca['resname'].tolist(),ca['resnr'].tolist())
+    resmap=list(zip(list(seq),ca['resname'].tolist(),ca['resnr'].tolist()))
     return seq, resmap
 
 def align(seq1,seq2):
-    if isinstance(seq1, basestring):
+    #basestring is a left over from python3
+    if isinstance(seq1, str):
         alignments=pairwise2.align.globalds(seq1,seq2,matrix,-11,-11,penalize_end_gaps=True,)
         return alignments
     elif isinstance(seq1, list):
