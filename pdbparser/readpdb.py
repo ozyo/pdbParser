@@ -90,7 +90,7 @@ def readatom(pdb):
             atoms.append(line)
     return atoms
 
-def coord(atomlines):
+def coord(atomlines,removeicode=True):
     coords=[]
     for atom in atomlines:
         atnr=int(atom[6:11].strip())
@@ -100,6 +100,8 @@ def coord(atomlines):
         ch=atom[21]
         resnr=int(atom[22:26])
         icode=atom[26].strip()
+        if removeicode:
+            icode=" "
         x=float(atom[30:38].strip())
         y=float(atom[38:46].strip())
         z=float(atom[46:54].strip())
