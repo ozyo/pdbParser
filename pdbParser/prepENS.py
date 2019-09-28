@@ -291,7 +291,7 @@ def getcore(info,cwd,multiseq=False):
                 continue
             except (OSError,IOError):
                 continue
-        chains=complete[pdb]
+        chains=sorted(complete[pdb])
         try:
             pdblines=open(cwd+'/'+pdb,'r').readlines()
         except (OSError,IOError):
