@@ -1,10 +1,14 @@
+This branch is for Python 3 version of pdbParser. Master soon will be retired.
+
 pdbParser retrives CA coordinates of the structures deposited at the RCSB data bank to be used with eBDIMs
 
-To make use of these scripts you need to install Python 2.7 and the packages listed below:
+To make use of these scripts you need to install Python 3 and the packages listed below:
 
 - numpy
 - biopython
 - requests
+- pandas
+- argparse
 
 To use the standalone version simply run (either with local files or with PDB ID):
 
@@ -17,7 +21,7 @@ There is also a support for ensemble preperation. You can refer to the tutorial 
 ``` run.py --prepENS UniProt ID --multimeric Nr.ofChains ```
 
 The issues pdbParser can't tackle at the moment are:
-* Heteromeric structures in ensemble preperation.
+* Heteromeric structures in ensemble preperation, now supported, awating tests.
 * Structures with missing residues are not repaired. (An example modeller script can be found in the tutorial folder)
 
 Below cases should give correct structures but caution is needed
