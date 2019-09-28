@@ -289,17 +289,27 @@ def find_resid_onetoone(structaln,resmap,blocks):
         end=blocks[block][-1]+1
         filt=resids.iloc[:,start:end]
         missing=0
+        tmpbroken=[]
         for ids in filt.index:
-            gaps=filt.loc[[ids]][filt=='-'].dropna(axis=1).columns.to_list()
-            if len(gaps) == len(filt.columns) or len(gaps) >= len(filt.columns)/2.0:
-                missing+=1
+            if ids in broken:
+                continue
             else:
-                if len(gaps) > 0:
-                    logging.warning('%s has missing residues in block %s, marked as broken.' %(ids,block))
-                    broken.append(ids.split('|')[0])
+                gaps=filt.loc[[ids]][filt=='-'].dropna(axis=1).columns.to_list()
+                if len(gaps) == len(filt.columns) or len(gaps) >= len(filt.columns)/2.0:
+                    missing+=1
+                    tmpbroken.append(ids)
+                else:
+                    if len(gaps) > 0:
+                        logging.warning('%s has missing residues in block %s, marked as broken.' %(ids,block))
+                        broken.append(ids.split('|')[0])
         if missing == len(filt.index):
-            logging.info('Block %s is not resolved in any of the structures.' %block)
+            logging.warning('Block %s is not resolved in any of the structures.' %block)
             blocks.pop(block)
+        else:
+            if len(tmpbroken) > 0:
+                for tmp in tmpbroken:
+                    logging.warning('%s has missing residues in block %s, marked as broken' %(tmp,block))
+                    broken.append(tmp.split('|')[0])
     return(resids,list(set(broken)))
 
 def aln_struct_to_core(alnf,outf,seqf,resmap,cwd,merinfo,query,totmer,clustalopath,updates=False,cores=None):
