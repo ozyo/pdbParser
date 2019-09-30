@@ -8,6 +8,7 @@ from pdbParser import parser as pP
 from pdbParser import writepdb as wp
 from pdbParser import clean_pdb as cp
 from pdbParser import alignment as a
+reload(a)
 import pandas as pd
 
 class PDBInfo():
@@ -255,11 +256,11 @@ def msa(info,cwd,clustalopath,alnf=None,multiseq=False,updates=False,cores=None)
     if multiseq and not alnf:
         logging.error('If using multiple UniProt IDs, profile alignment file is necesseary.')
         return(None)
-    seqfile=cwd+'/'+info.seqfilename
-    resmap=cwd+'/'+info.residmapfilename
+    seqfile=info.seqfilename
+    resmap=info.residmapfilename
     merinfo=info.result
     totmer=info.mer
-    outfile=cwd+'/'+info.alnfasta
+    outfile=info.alnfasta
     if not multiseq:
         complete,resids,broken=a.msa_clustal(seqfile,resmap,outfile,clustalopath,cwd,merinfo,query,totmer,alnf)
     else:
@@ -291,7 +292,7 @@ def getcore(info,cwd,multiseq=False):
                 continue
             except (OSError,IOError):
                 continue
-        chains=sorted(complete[pdb])
+        chains=complete[pdb]
         try:
             pdblines=open(cwd+'/'+pdb,'r').readlines()
         except (OSError,IOError):

@@ -179,9 +179,9 @@ def findresid(shifts,nter,cter,resmap):
 def msa_clustal(infile,resmap,outfile,clustalopath,cwd,merinfo,query,totmer,alnf=None):
     resmap=cwd+'/'+resmap
     if alnf is None:
-        clustalomega_cline = ClustalOmegaCommandline(infile=infile, outfile=outfile, verbose=False, auto=True, force=True)
+        clustalomega_cline = ClustalOmegaCommandline(infile=cwd+'/'+infile, outfile=cwd+'/'+outfile, verbose=False, auto=True, force=True)
         clustalomega_cline()
-        msa=AlignIO.read(outfile, "fasta")
+        msa=AlignIO.read(cwd+'/'+outfile, "fasta")
     else:
         msa=AlignIO.read(cwd+'/'+alnf, "fasta")
     broken=[]
@@ -313,7 +313,7 @@ def find_resid_onetoone(structaln,resmap,blocks):
     return(resids,list(set(broken)))
 
 def aln_struct_to_core(alnf,outf,seqf,resmap,cwd,merinfo,query,totmer,clustalopath,updates=False,cores=None):
-    clustalomega_cline = ClustalOmegaCommandline(infile=seqf, profile1=alnf,outfile=outf, verbose=False, auto=True, force=True)
+    clustalomega_cline = ClustalOmegaCommandline(infile=cwd+'/'+seqf, profile1=cwd+'/'+alnf,outfile=cwd+'/'+outf, verbose=False, auto=True, force=True)
     clustalomega_cline()
     alndata,alncomment=parse_fasta_aln_multi(outf)
     refaln=alndata.filter(regex="refseq_",axis=0)
