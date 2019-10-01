@@ -3,165 +3,113 @@ import numpy as np
 from copy import deepcopy
 from pdbParser import parser as pP
 from pdbParser import writepdb as wp
+from scipy.spatial.transform import Rotation as R
 
-def com(ca,chain=None):
-    #This is not really a center of mass calculation, no mass weight is considered
-    if chain:
-        tmp=ca[ca['ch']==chain]
-    else:
-        tmp=ca
-    com=[np.mean(np.array(tmp[['x']],dtype="float64")),np.mean(np.array(tmp[['y']],dtype="float64")),np.mean(np.array(tmp[['z']],dtype="float64"))]
-    return(com)
+def com(xyz,weight,tweight):
+    coms=np.sum(xyz,axis=0)
+    coms=(coms*weight)/tweight
+    print(coms)
+    return(coms)
+def inertia(xyz,com,weight):
+    xyz=xyz-com
+    Ixx=np.sum(weight*(xyz[:,1]*xyz[:,1]*xyz[:,2]*xyz[:,2]))
+    Iyy=np.sum(weight*(xyz[:,0]*xyz[:,0]*xyz[:,2]*xyz[:,2]))
+    Izz=np.sum(weight*(xyz[:,1]*xyz[:,1]*xyz[:,2]*xyz[:,2]))
+    Ixy=np.sum(-(weight*(xyz[:,0]*xyz[:,1])))
+    Ixz=np.sum(-(weight*(xyz[:,0]*xyz[:,2])))
+    Iyz=np.sum(-(weight*(xyz[:,1]*xyz[:,2])))
+    return(np.array([[Ixx,Ixy,Ixz],[Ixy,Iyy,Iyz],[Ixz,Iyz,Izz]]))
 
-def orient(tca,ids,coms_only=True):
-    tca=deepcopy(tca)
-    x=deepcopy(tca['x'])
-    y=deepcopy(tca['y'])
-    z=deepcopy(tca['z'])
-    xx=deepcopy(tca['x'])
-    yy=deepcopy(tca['y'])
-    zz=deepcopy(tca['z'])
-    lens=tca.shape[0]
-    m=np.array([12.0107]*lens) #carbon
-    comx=0
-    comy=0
-    comz=0
-    totalm=0
-    for i in range(lens):
-        # use the abs of the weights                                                                                                                                                                            
-        mm=abs(m[i])
-        totalm+=mm
-        comx+=x[i]*mm
-        comy+=y[i]*mm
-        comz+=z[i]*mm
-    comx=comx/totalm
-    comy=comy/totalm
-    comz=comz/totalm
-    coms=[comx,comy,comz]
-    if coms_only:
-        return(coms)
-    #get inertia
-    Ixx=0
-    Ixy=0
-    Ixz=0
-    Iyy=0
-    Iyz=0
-    Izz=0
-    for i in range(lens):
-        mm=abs(m[i])
-        totalm+=mm
-        xx[i]=xx[i]-coms[0]
-        yy[i]=yy[i]-coms[1]
-        zz[i]=zz[i]-coms[2]
-        rr=xx[i]+yy[i]+zz[i]
-        Ixx=Ixx+mm*(yy[i]*yy[i]*zz[i]*zz[i])
-        Ixy=Ixy-mm*(xx[i]*yy[i])
-        Ixz=Ixz-mm*(xx[i]*zz[i])
-        Iyy=Iyy+mm*(xx[i]*xx[i]*zz[i]*zz[i])
-        Iyz=Iyz-mm*(yy[i]*zz[i])
-        Izz=Izz+mm*(xx[i]*xx[i]*yy[i]*yy[i])
-    I=np.array([[Ixx,Ixy,Ixz],[Ixy,Iyy,Iyz],[Ixz,Iyz,Izz]],dtype="float64")
-    #get vectors
-    e_values, e_vectors=np.linalg.eig(I)
-    #order = np.argsort(e_values)
-    #e_values = e_values[order]
-    #print(e_vectors[:, order])
-    #e_vectors = e_vectors[:, order].transpose()
-    #print(e_vectors)
-    for i in range(lens):
-        xyz=np.array([xx[i],yy[i],zz[i]])
-        t=np.dot(e_vectors,xyz)
-        xx[i]=t[0]
-        yy[i]=t[1]
-        zz[i]=t[2]
-    if max(xx)-min(xx) > max(yy)-min(yy):
-        tmpx=xx
-        xx=yy
-        yy=tmpx
-    elif max(yy)-min(yy) > max(zz)-min(zz):
-        tmpy=yy
-        yy=zz
-        zz=tmpy
-    #print(ca['x'][0])
-    for i in range(lens):
-        tca['x'][i]=round(xx[i],3)
-        tca['y'][i]=round(yy[i],3)
-        tca['z'][i]=round(zz[i],3)
-    wp.writeca(tca,"aln_%s" %ids)
-    return(tca)
+def get_rotation_matrix(i_v, unit=None):
+    #https://stackoverflow.com/questions/43507491/imprecision-with-rotation-matrix-to-align-a-vector-to-an-axis
+    # From http://www.j3d.org/matrix_faq/matrfaq_latest.html#Q38
+    if unit is None:
+        unit = [1.0, 0.0, 0.0]
+    # Normalize vector length
+    i_v /= np.linalg.norm(i_v)
+
+    # Get axis
+    uvw = np.cross( unit, i_v)
+
+    # compute trig values - no need to go through arccos and back
+    rcos = np.dot(i_v, unit)
+    rsin = np.linalg.norm(uvw)
+
+    #normalize and unpack axis
+    if not np.isclose(rsin, 0):
+        uvw /= rsin
+    u, v, w = uvw
+
+    # Compute rotation matrix - re-expressed to show structure
+    return (
+        rcos * np.eye(3) +
+        rsin * np.array([
+            [ 0, -w,  v],
+            [ w,  0, -u],
+            [-v,  u,  0]
+        ]) +
+        (1.0 - rcos) * uvw[:,None] * uvw[None,:]
+    )
 
 def direction(ca,chains,ids):
     chains=chains
-    com_all=orient(ca,ids,coms_only=True)
-    #print(com_all)
-    #if ca['z'][0] > com_all[2] or ca['y'][0] > com_all[1] or ca['x'][0] > com_all[0]:
-    #    for i in range(ca.shape[0]):
-    #        ca['x'][i]=ca['x'][i]*-1
-    #        ca['y'][i]=ca['y'][i]*-1
-    #        ca['z'][i]=ca['z'][i]*-1
-    #Making sure all of them looks at the same direction in the coordinate axes, otherwise assignments are wrong.
     xyz=np.array(ca[['x','y','z']].tolist(),dtype="float64")
-    xyz=xyz-com_all
-    #np.save("test_%s.npy" %ids,ca[['atnr','ch','x','y','z']])
-    # For ordering https://github.com/pierrepo/principal_axes/blob/master/principal_axes.py
-    inertia = np.dot(xyz.transpose(), xyz)
+    m=np.float(12.0107)
+    totm=m*xyz.shape[0]
+    print(totm)
+    coms=com(xyz,m,totm)
+    I=inertia(xyz,coms,m)
+    #inertia = np.dot( xyz.transpose(),xyz)
     #print(inertia)
-    e_values, e_vectors = np.linalg.eig(inertia)
-    order = np.argsort(e_values)
-    eval3, eval2, eval1 = e_values[order]
-    #print(e_vectors[:,order])
-    rotxyz = e_vectors[:, order].transpose()
-    #print(e_values[order])
-    #print(rotxyz)
+    xyz=xyz-coms
+    e_values, e_vectors = np.linalg.eig(I)#inertia)
+    print(I)
+    order=np.argsort(e_values)
+    axis3,axis2,axis1 =  e_vectors[:,order].transpose()
     #rotxyz=np.array([axis1,axis2,axis3])
+    #rotxyz=np.dot(np.array([[1,0,0],[0,1,0],[0,0,1]]),rotxyz)
+    #axess=np.array([1,0,0])
+    print(I.shape)
+    rotxyz=get_rotation_matrix(axis2,unit=[0.0,0.0,1.0])
+    #print(rotxyz)
     for i in range(ca.shape[0]):
-        t=np.dot(rotxyz,xyz[i])
-        xyz[i][0]=t[0]
-        xyz[i][1]=t[1]
-        xyz[i][2]=t[2]
-    #print(np.mean(xyz,0))
-    if max(xyz[:,0])-min(xyz[:,0]) > max(xyz[:,1])-min(xyz[:,1]):
-        tmpx=xyz[:,0]
-        xyz[:,0]=xyz[:,1]
-        xyz[:,1]=tmpx
-    elif max(xyz[:,1])-min(xyz[:,1]) > max(xyz[:,2])-min(xyz[:,2]):
-        tmpy=xyz[:,1]
-        xyz[:,1]=xyz[:,2]
-        xyz[:,2]=tmpy
+        xyz[i]=np.dot(xyz[i].T, rotxyz.T)
+        #xyz[i]=np.dot(xyz[i],axess)
+    #    xyz[i]=np.dot(rotxyz,xyz[i])
+    print(xyz[0])
+    #xyz=xyz-xyz.min(axis=0)
+    print(xyz[0])
     for i in range(ca.shape[0]):
         ca['x'][i]=round(xyz[i][0],3)
         ca['y'][i]=round(xyz[i][1],3)
         ca['z'][i]=round(xyz[i][2],3)
-    #wp.writeca(ca,"aln_%s" %ids)
-    #com_all=np.array(com(ca))
-    #if ca['z'][0] > com_all[2]:
-    #    for i in range(ca.shape[0]):
-    #        ca['x'][i]=ca['x'][i]*-1
-    #        ca['y'][i]=ca['y'][i]*-1
-    #        ca['z'][i]=ca['z'][i]*-1
-    #    wp.writeca(ca,"rot_%s" %ids)
-        # xyz=np.array(ca[['x','y','z']].tolist())
-        # angle=180 * math.pi / 180
-        # zn=xyz[:,2]
-        # yn=xyz[:,0]*math.cos(angle) - xyz[:,1]*math.sin(angle)
-        # xn=xyz[:,0]*math.sin(angle) + xyz[:,1]*math.cos(angle)
-        # for i in range(xyz.shape[0]):
-        #     ca['x'][i]=round(xn[i],3)
-        #     ca['y'][i]=round(yn[i],3)
-        #     ca['z'][i]=round(zn[i],3)
-        #wp.writeca(ca,"rot_%s" %ids)
-    #ca=orient(ca,ids)
+    wp.writeca(ca,"aln_%s" %ids)
+
     coms=[]
-    for ch in chains:
-        coms.append(orient(ca[ca['ch']==ch],ids,coms_only=True))
+    for ch in sorted(chains):
+        loc=np.where(ca['ch']==ch)
+        chcom=np.mean(xyz[loc],0)
+        coms.append(chcom)
+        #np.mean(np.array(ca[ca['ch']==ch][['x','y','z']].tolist()),0))
+    
     edges=[]
-    for ind,c in enumerate(coms):
-        if ind == len(chains)-1:
+    for i in range(len(coms)):
+        if i == len(coms)-1:
             nextc=coms[0]
         else:
-            nextc=coms[ind+1]
-        edges.append((nextc[2]-c[2])*(nextc[1]+c[1]))
-    if sum(edges) > 0:
+            nextc=coms[i+1]
+        c=coms[i]
+        edges.append((nextc[0]-c[0])*(nextc[1]+c[1]))
+    mult=1
+    if xyz[0][2] > np.mean(xyz,0)[2]:
+        mult=-1
+    else:
+        mult=1
+
+    print(sum(edges))
+    s=sum(edges)*mult
+    print(s)
+    if s < 0:
         return "ac"
     else:
         return "c"
