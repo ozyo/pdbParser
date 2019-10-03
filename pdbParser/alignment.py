@@ -315,14 +315,14 @@ def find_resid_onetoone(structaln,resmap,blocks):
 def aln_struct_to_core(alnf,outf,seqf,resmap,cwd,merinfo,query,totmer,clustalopath,updates=False,cores=None):
     clustalomega_cline = ClustalOmegaCommandline(infile=cwd+'/'+seqf, profile1=cwd+'/'+alnf,outfile=cwd+'/'+outf, verbose=False, auto=True, force=True)
     clustalomega_cline()
-    alndata,alncomment=parse_fasta_aln_multi(outf)
+    alndata,alncomment=parse_fasta_aln_multi(cwd+'/'+outf)
     refaln=alndata.filter(regex="refseq_",axis=0)
     structaln=alndata.filter(regex=".pdb",axis=0)
     if not updates:
         core=find_core(refaln)
     else:
         core=cores
-    resid,broken=find_resid_onetoone(structaln,resmap,core)
+    resid,broken=find_resid_onetoone(structaln,cwd+'/'+resmap,core)
     completemers={}
     fullids=list(set([key.split('|')[0] for key in resid.index]))
     for pdb in fullids:

@@ -5,6 +5,7 @@ import sys,os
 import numpy as np
 from importlib import reload
 from pdbParser import parser as pP
+reload(pP)
 from pdbParser import writepdb as wp
 from pdbParser import clean_pdb as cp
 from pdbParser import alignment as a
@@ -81,8 +82,8 @@ class PDBInfo():
                 pdbids.remove(pdb)
         return(returninfo,refseq)
 
-    def core_show(self,positions=[]):
-        alndata,alncomment=a.parse_fasta_aln_multi(self.alnfasta)
+    def core_show(self,cwd,positions=[]):
+        alndata,alncomment=a.parse_fasta_aln_multi(cwd+'/'+self.alnfasta)
         self.alndata=alndata
         if len(positions)==2:
             alndata=self.alndata.iloc[:,positions[0]:positions[-1]]
@@ -212,7 +213,7 @@ class multiPDBInfo():
         return(styled)
 
 
-def downloadPDB(info,cwd,multiseq=False):
+def downloadPDB(info,cwd,multiseq=False,returnordch=True):
     query=info.query if not multiseq else info.querylist
     pdblist=info.result
     mer=info.mer
@@ -220,16 +221,23 @@ def downloadPDB(info,cwd,multiseq=False):
     altloc="A"
     outseq=open(cwd+'/'+info.seqfilename,'w')
     outresmap=open(cwd+'/'+info.residmapfilename,'w')
+    orderedchinfo={pdb:pdblist[pdb][0] for pdb in pdblist}
+    orderedchinfo={key:[val,[0]*val] for key,val in orderedchinfo.items()}
     if multiseq:
         for query in refseq.keys():
             outseq.write('>refseq_'+query+'\n'+refseq[query]+'\n')
     else:
         outseq.write('>refseq'+'\n'+refseq+'\n')
     for pdb in list(pdblist.keys()):
-        urllib.request.urlretrieve('http://files.rcsb.org/download/%s.pdb' %pdb, cwd+'/'+pdb+'.pdb')
-        #time.sleep(-1)
-        for mol in range(0,pdblist[pdb][0]):
+        print(pdb)
+        try:
             pdblines=open(cwd+'/'+pdb+'.pdb').readlines()
+        except:
+            urllib.request.urlretrieve('http://files.rcsb.org/download/%s.pdb' %pdb, cwd+'/'+pdb+'.pdb')
+            pdblines=open(cwd+'/'+pdb+'.pdb').readlines()
+        #time.sleep(-1)
+        for mol in range(pdblist[pdb][0]):
+            #pdblines=open(cwd+'/'+pdb+'.pdb').readlines()
             if pP.pdbTitle(pdblines) is True:
                 try:
                     pdblist.pop(pdb)
@@ -238,18 +246,21 @@ def downloadPDB(info,cwd,multiseq=False):
                 except KeyError:
                     logging.info('This structure was already removed. I am an example of bad programming. Nothing to worry about')
                     continue
-            coord=pP.parse_ca(pdblines,pdb,mer,altloc,[pdblist[pdb][1][mol]])
-            coord=cp.getca(coord,altloc,[pdblist[pdb][1][mol]])
+            coord,ordch=pP.parse_ca(pdblines,pdb,mer,altloc,chains=pdblist[pdb][1][mol],caonly=True,returnch=True)
+            orderedchinfo[pdb][1][mol]=ordch
             wp.writeca(coord,cwd+'/'+pdb+'_'+str(mol+1)+'.pdb')
-            for ch in pdblist[pdb][1][mol]:
+            for ch in orderedchinfo[pdb][1][mol]:
                 ca=cp.getca(coord,altloc,ch)
-                seq,map=a.getseq(ca)
+                seq,maps=a.getseq(ca)
                 outseq.write('>'+pdb+'_'+str(mol+1)+'.pdb'+'|'+ch+'|'+'\n'+seq+'\n')
-                code,name,nr=list(zip(*map))
+                code,name,nr=list(zip(*maps))
                 outresmap.write('>'+pdb+'_'+str(mol+1)+'.pdb'+'|'+ch+'|'+'\n'+'-'.join([str(i) for i in nr])+'\n')
-        os.remove(cwd+'/'+pdb+'.pdb')
+        #os.remove(cwd+'/'+pdb+'.pdb')
     outseq.close()
     outresmap.close()
+    return(orderedchinfo)
+
+
 
 def msa(info,cwd,clustalopath,alnf=None,multiseq=False,updates=False,cores=None):
     query=info.query if not multiseq else info.tag
@@ -299,6 +310,9 @@ def getcore(info,cwd,multiseq=False):
             logging.warning('File does not exist: '+pdb+' skipped')
             continue
         ca=pP.parse_ca(pdblines,pdb,totmer,altloc,[chains])
+        #We have to reorder the chains since we loop over them.
+        _, idx = np.unique(ca['ch'], return_index=True)
+        chains=ca['ch'][np.sort(idx)]
         newca=None
         for ch in chains:
             if not multiseq:
