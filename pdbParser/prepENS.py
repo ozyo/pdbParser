@@ -212,6 +212,11 @@ class multiPDBInfo():
         styled=filt.style.apply(here_block,se=se,axis=1).applymap(here_gap)
         return(styled)
 
+    def write_seq_resid(self):
+        aanr={}
+        
+        return(styled)
+
 
 def downloadPDB(info,cwd,multiseq=False,returnordch=True):
     query=info.query if not multiseq else info.querylist
