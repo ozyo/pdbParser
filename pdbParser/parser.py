@@ -24,6 +24,7 @@ def parse_ca(pdb,pdbid,mer,altloc,chains=[],caonly=True,returnch=False):
     logging.info('Checking for missing residues')
     atomlines=rp.readatom(pdb)
     coords=rp.coord(atomlines)
+    coords=cp.clean_altloc(coords,altloc)
     if caonly:
         if returnch:
             coords,ordch=cp.getca(coords,altloc,chlist=chains,returnch=True)
@@ -33,7 +34,7 @@ def parse_ca(pdb,pdbid,mer,altloc,chains=[],caonly=True,returnch=False):
             return coords
     else:
         if returnch and len(chains) > 0:
-            coords,ordch=cp.getch(coords,chains)
+            coords,ordch=cp.getch(coords,chains,returnch=True)
             return coords,ordch
         else:
             return coords

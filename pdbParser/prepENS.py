@@ -39,13 +39,12 @@ class PDBInfo():
             pdbids,refseq=result1.split('\n')[1].split('\t')
             refseq=str(refseq)
             pdbids=['{}'.format(i) for i in pdbids.split(';') if len(i)>1]
-
             if self.exclude is not None:
                 try:
                     for ex in self.exclude:
                         pdbids.remove(ex)
                         logging.info('Removing PDB ID %s' %ex)
-                except KeyError:
+                except ValueError:
                     logging.warning('Did not find the PDB ID %s' %ex)
             chainids={z.split(';')[1].strip():z.split(';')[4].split('=')[0].strip() for z in [i for i in urllib.request.urlopen(URLbase+self.query+'.txt').read().decode('utf-8').splitlines() if i.startswith('DR   PDB;')] if z.split()[3] not in ['NMR;','model;']}
         else:
@@ -72,14 +71,14 @@ class PDBInfo():
                     else:
                         logging.critical('Cannot process PDB id %s. It does not contain complete set' %pdb)
                         chainids.pop(pdb)
-                        pdbids.remove(pdb)
+                        #pdbids.remove(pdb)
                 else:
                     logging.critical('Cannot process PDB id %s. It does not contain complete set' %pdb)
                     chainids.pop(pdb)
-                    pdbids.remove(pdb)
+                    #pdbids.remove(pdb)
             except KeyError:
                 logging.warning('PDB ID %s is either an NMR structure or a model. Skipping' %pdb)
-                pdbids.remove(pdb)
+                #pdbids.remove(pdb)
         return(returninfo,refseq)
 
     def core_show(self,cwd,positions=[]):
@@ -126,6 +125,7 @@ class multiPDBInfo():
             }
 
             result1 = requests.get(URLbase,params=idparam).text
+
             if len(result1) > 0:
                 pdbids,refseq=result1.split('\n')[1].split('\t')
                 refseq=str(refseq)
@@ -136,10 +136,11 @@ class multiPDBInfo():
                         for ex in self.exclude:
                             pdbids.remove(ex)
                             logging.info('Removing PDB ID %s' %ex)
-                    except KeyError:
+                    except ValueError:
                         logging.warning('Did not find the PDB ID %s' %ex)
 
                 chainids={z.split(';')[1].strip():z.split(';')[4].split('=')[0].strip() for z in [i for i in urllib.request.urlopen(URLbase+query+'.txt').read().decode('utf-8').splitlines() if i.startswith('DR   PDB;')] if z.split()[3] not in ['NMR;','model;']}
+                print(chainids)
             else:
                 logging.critical('Cannot retrive the information for query number %s' %(query))
                 return(None,None)
@@ -147,7 +148,10 @@ class multiPDBInfo():
                 try:
                     fullpdblist[pdb]
                 except KeyError:
-                    fullpdblist[pdb]=chainids[pdb]
+                    try:
+                        fullpdblist[pdb]=chainids[pdb]
+                    except KeyError:
+                        print(f"{pdb} does not have chain id skipped")
                 else:
                     fullpdblist[pdb]=fullpdblist[pdb]+'/'+chainids[pdb]
 
@@ -238,8 +242,13 @@ def downloadPDB(info,cwd,multiseq=False,returnordch=True):
         try:
             pdblines=open(cwd+'/'+pdb+'.pdb').readlines()
         except:
-            urllib.request.urlretrieve('http://files.rcsb.org/download/%s.pdb' %pdb, cwd+'/'+pdb+'.pdb')
-            pdblines=open(cwd+'/'+pdb+'.pdb').readlines()
+            try:
+                urllib.request.urlretrieve('http://files.rcsb.org/download/%s.pdb' %pdb, cwd+'/'+pdb+'.pdb')
+            except:
+                print("%s cannot be downloaded as pdb" %pdb)
+                continue
+            else:
+                pdblines=open(cwd+'/'+pdb+'.pdb').readlines()
         #time.sleep(-1)
         for mol in range(pdblist[pdb][0]):
             #pdblines=open(cwd+'/'+pdb+'.pdb').readlines()
@@ -314,7 +323,7 @@ def getcore(info,cwd,multiseq=False):
         except (OSError,IOError):
             logging.warning('File does not exist: '+pdb+' skipped')
             continue
-        ca=pP.parse_ca(pdblines,pdb,totmer,altloc,[chains])
+        ca=pP.parse_ca(pdblines,pdb,totmer,altloc,[chains],caonly=True)
         #We have to reorder the chains since we loop over them.
         _, idx = np.unique(ca['ch'], return_index=True)
         chains=ca['ch'][np.sort(idx)]

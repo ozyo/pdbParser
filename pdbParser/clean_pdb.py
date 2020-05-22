@@ -15,7 +15,6 @@ def getch(coord,chlist,returnch=False):
         if ch in flatchlist:
             ordch.append(ch)
     delch=coord[np.in1d(coord['ch'],ordch)]
-    print(chains,flatchlist)
     if returnch:
         return delch, ordch
     return delch
@@ -30,3 +29,6 @@ def getca(coord,altloc,chlist=[],returnch=False):
         else:
             ca=getch(ca,chlist,returnch=False)
             return ca
+
+def clean_altloc(coord,altloc):
+    return coord[(coord['altloc'] == altloc) | (coord['altloc'] == '')]
