@@ -1,7 +1,7 @@
 import numpy as np
 from copy import deepcopy
-from pdbParser import parser as pP
-from pdbParser import writepdb as wp
+from pdbParser.parser import parse_chlist, parse_ca
+from pdbParser.writepdb import writeca
 
 
 def com(xyz, weight, tweight):
@@ -104,7 +104,7 @@ def direction(ca, chains, ids):
         ca["x"][i] = round(xyz[i][0], 3)
         ca["y"][i] = round(xyz[i][1], 3)
         ca["z"][i] = round(xyz[i][2], 3)
-    wp.writeca(ca, "aln_%s" % ids)
+    writeca(ca, "aln_%s" % ids)
     coms = []
     for ch in chains:
         loc = np.where(ca["ch"] == ch)
@@ -186,9 +186,9 @@ def reorder(id_ch_dict, cwd, altloc="A", tag=None):
             name = tag + ids
         else:
             name = ids
-        frch = pP.parse_chlist(open(cwd + "/" + name, "r"))
+        frch = parse_chlist(open(cwd + "/" + name, "r"))
         frch = [i for i in frch if i in id_ch_dict[ids]]
-        uni_list[ids] = pP.parse_ca(open(cwd + "/" + name, "r"), "NA", frch, altloc)
+        uni_list[ids] = parse_ca(open(cwd + "/" + name, "r"), "NA", frch, altloc)
         id_ch_dict[ids] = frch
 
     neworders = direction_check(uni_list, id_ch_dict)
@@ -205,7 +205,7 @@ def reorder(id_ch_dict, cwd, altloc="A", tag=None):
                 tmp["ch"][changelock] = oldch
                 newchains.append(tmp)
             merged = np.concatenate(newchains)
-            wp.writeca(merged, cwd + "/" + "reordered_" + ids)
+            writeca(merged, cwd + "/" + "reordered_" + ids)
     return list(neworders.keys())
 
 
@@ -220,13 +220,13 @@ def forceorder(id_ch_dict, cwd, mer, alph=True, ordlist=[], forordict={}, altloc
             else:
                 name = ids
             newstamp = list(sorted(id_ch_dict[ids]))
-            ca = pP.parse_ca(open(cwd + "/" + name, "r"), "NA", mer, altloc, newstamp)
+            ca = parse_ca(open(cwd + "/" + name, "r"), "NA", mer, altloc, newstamp)
             sep_chains = sepchains(ca, newstamp)
             newchains = []
             for ch in newstamp:
                 newchains.append(sep_chains[ch])
             merged = np.concatenate(newchains)
-            wp.writeca(merged, cwd + "/" + "reordered_2_" + ids)
+            writeca(merged, cwd + "/" + "reordered_2_" + ids)
     else:
         for ids, ords in forordict.items():
             print(ids)
@@ -237,7 +237,7 @@ def forceorder(id_ch_dict, cwd, mer, alph=True, ordlist=[], forordict={}, altloc
             newstamp = list(sorted(ords))
             for ind, ch in enumerate(forordict[ids]):
                 newchains = []
-                ca = pP.parse_ca(open(cwd + "/" + name, "r"), id_ch_dict[ids], altloc)
+                ca = parse_ca(open(cwd + "/" + name, "r"), id_ch_dict[ids], altloc)
                 sep_chains = sepchains(ca, id_ch_dict[ids])
                 for ind, ch in enumerate(ords):
                     tmp = deepcopy(sep_chains[ch])
@@ -245,4 +245,4 @@ def forceorder(id_ch_dict, cwd, mer, alph=True, ordlist=[], forordict={}, altloc
                     tmp["ch"][changelock] = newstamp[ind]
                     newchains.append(tmp)
                 merged = np.concatenate(newchains)
-                wp.writeca(merged, cwd + "/" + "reordered_2_" + ids)
+                writeca(merged, cwd + "/" + "reordered_2_" + ids)

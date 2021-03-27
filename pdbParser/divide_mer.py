@@ -3,8 +3,6 @@ import numpy as np
 import logging
 
 
-
-
 def divide_mer(ca,chlist,mer,missinginfo):
     nrba={}
     for mol in range(1,len(chlist)+1):

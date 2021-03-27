@@ -2,7 +2,7 @@ import logging
 import requests
 import urllib.request, urllib.parse, urllib.error
 
-from pdbParser.format_args import split_mer
+from pdbParser.formatargs import split_mer
 
 URLBASE = "http://www.uniprot.org/uniprot/"
 

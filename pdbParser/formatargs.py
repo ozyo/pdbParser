@@ -1,4 +1,7 @@
 def format_ch(ch_arg):
+    """
+    Fortmat chain arguments
+    """
     chlist = []
     tmplist = ch_arg.split(",")
     for sub in tmplist:
