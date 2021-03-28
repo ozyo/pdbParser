@@ -2,6 +2,12 @@
 
 pdbParser cleans the PDB files and extracts the CA coordinates to be used with eBDIMs. Code can be run on local files, or with PDB codes to download files from the RCSB server. 
 
+eBDIMS server can be accesed at https://ebdims.biophysics.se/
+
+For more information about the eBDIMS method please read the following publication:
+
+> Orellana, L. et al. Prediction and validation of protein intermediate states from structurally rich ensembles and coarse-grained simulations. Nat. Commun. 7:12575 doi: 10.1038/ncomms12575 (2016).
+
 ## REQUIREMENTS
 
 - numpy
