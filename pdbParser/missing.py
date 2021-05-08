@@ -19,7 +19,7 @@ def missinginfo(r465, chlist, ca):
             min = ca[ca["ch"] == ch]["resnr"].tolist()[0]
             for i in rmis:
                 if i < max and i > min:
-                    logging.warning(
+                    logging.info(
                         "If there are multiple biological assemblies, I will try to pick the one that is not broken. Else, I will quit"
                     )
                     # we set the chain as not complete if the missing residues are at the termini only.

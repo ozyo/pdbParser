@@ -63,6 +63,9 @@ except TypeError:
     else:
         pass
 
+outf = args.cwd + "/error.dat"
+logging.basicConfig(level=logging.DEBUG, filename=outf, filemode="w")
+
 logging.info(
     "Output directory is %s.\n\t If the input files are not given with full path, current working directory is used to search."
     % args.cwd
@@ -87,30 +90,40 @@ echains = split_mer(args.mer, format_ch(args.echains))
 # toAlign=True
 
 
-def obtain_structure(idx, chains, altloc, download):
-    start = getpdb(idx, download)
+def obtain_structure(idx, chains, altloc, download, cwd):
+    start = getpdb(idx, download, cwd)
     if check_multimodel(start):
         raise ValueError("PDB files with multiple models are not supported.")
     ca = parse_ca(start, chains, altloc)
     return ca
 
 
-outf = args.cwd + "/error.dat"
-logging.basicConfig(level=logging.INFO, filename=outf)
 # For monomeric assemblies we will be checking all the chain combinations until we find a start-target complex that is not broken.
-
-for ch1, ch2 in product(schains, echains):
-    logging.info("Processing PDB files")
-    start = obtain_structure(sid, ch1, args.altloc, args.download)
-    end = obtain_structure(eid, ch2, args.altloc, args.download)
-    logging.info("Extracting the core region.")
-    if len(ch1) == 1 and len(ch2) == 1:
-        score, ecore, correct = getaligned(start, end)
+try:
+    for ch1, ch2 in product(schains, echains):
+        print("Testing", ch1, ch2, sid, eid)
+        logging.info("Processing PDB files")
+        start = obtain_structure(sid, ch1, args.altloc, args.download, outf)
+        end = obtain_structure(eid, ch2, args.altloc, args.download, outf)
+        logging.info("Extracting the core region.")
+        if len(ch1) == 1 and len(ch2) == 1:
+            score, ecore, correct = getaligned(start, end)
+        else:
+            score, ecore, correct = multialigned(start, end, args.mer)
+        if correct is True:
+            writeca(score, args.cwd + "/start.pdb")
+            writeca(ecore, args.cwd + "/target.pdb")
+            logging.info("SUCCESS")
+            break
+        else:
+            continue
     else:
-        score, ecore, correct = multialigned(start, end, args.mer)
-    if correct is True:
-        writeca(score, args.cwd + "/start.pdb")
-        writeca(ecore, args.cwd + "/target.pdb")
-        break
-    else:
-        continue
+        logging.error("None of the assemblies were complete.")
+        logging.error("FAIL")
+except:
+    logging.critical("FAIL")
+    logging.critical(
+        "This was an unexpected error. Please contact the developers with the PDB codes/files raised that error with this log.",
+        stack_info=True,
+    )
+    raise

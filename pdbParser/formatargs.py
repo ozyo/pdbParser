@@ -1,3 +1,7 @@
+# See COPYING for license
+import logging
+
+
 def format_ch(ch_arg):
     """
     Fortmat chain arguments
@@ -15,6 +19,7 @@ def format_ch(ch_arg):
         elif len(sub) == 1 and isinstance(sub, str):
             chlist.append(sub)
         else:
+            logging.critical("FAIL", stack_info=True)
             raise ValueError("Please supply the chain ids in these formats: A-E or A-C,E or A,B")
     return chlist
 
@@ -32,6 +37,8 @@ def split_mer(mer, chlist):
                 moldivision.append(chlist[i : i + mer])
             return moldivision
         else:
+            logging.critical("FAIL", stack_info=True)
             raise ValueError("Chain labels are not equal or multiple of total number of chains given.")
     else:
+        logging.critical("FAIL", stack_info=True)
         raise ValueError(f"List of chain ids: {chlist} cannot be split to {mer}.")

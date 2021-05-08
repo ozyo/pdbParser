@@ -1,6 +1,4 @@
 # See COPYING for license
-# Things to do
-# obtain files from previous processes and create a sequence alignment between CA atoms
 from Bio import pairwise2
 from Bio.Align import substitution_matrices
 from Bio.SeqUtils import seq1 as letter
@@ -126,27 +124,38 @@ def getaligned(ca1, ca2):
     sca2, mapca2 = getseq(ca2)
     # Grabs the first alignment
     aligned = align(sca1, sca2)[0]
-    print(aligned)
+    logging.info(str(aligned))
     aca1 = list(aligned[0])
     aca2 = list(aligned[1])
     shift1 = findgap(aca1)
     shift2 = findgap(aca2)
-    # map the gaps to the opposite structure, this is important!!!
-    nter1 = mapca1[shift2[0] : shift2[1]][0]
-    cter1 = mapca1[shift2[0] : shift2[1]][-1]
-    nter2 = mapca2[shift1[0] : shift1[1]][0]
-    cter2 = mapca2[shift1[0] : shift1[1]][-1]
+    # There is a case 1CIL-3EWV, where the sequences doesn't match but instead of printing an error
+    # code fails with index error. That's because shifts are larger than the mapca.
+    # It happens only when 1CIL is the starting structure.
+    # To ensure a smoot integration with the server catching all types of index errors here.
+    try:
+        # map the gaps to the opposite structure, this is important!!!
+        nter1 = mapca1[shift2[0] : shift2[1]][0]
+        cter1 = mapca1[shift2[0] : shift2[1]][-1]
+        nter2 = mapca2[shift1[0] : shift1[1]][0]
+        cter2 = mapca2[shift1[0] : shift1[1]][-1]
+    except IndexError:
+        logging.error("Sequences contain large shifts. Please check the sequence alignment.")
+        logging.error(
+            "This usually happens when two different types of proteins are given as start and target and the target structure is shorter than the start."
+        )
+        return [], [], False
     # since we mapped it to the opposite in the steps above, we can return back to normal
     core1 = ca1[(ca1["resnr"] >= nter1[2]) & (ca1["resnr"] <= cter1[2])]
     core2 = ca2[(ca2["resnr"] >= nter2[2]) & (ca2["resnr"] <= cter2[2])]
     if len(core1) == len(core2):
-        logging.info("Run successful can proceed eBDIMS calculation")
-        logging.critical("SUCCESS")
         return core1, core2, True
     else:
-        logging.critical("There are non-terminal missing residues.")
-        logging.critical("Please fix the structures manually to continue.")
-        logging.critical("FAIL")
+        sch = np.unique(core1["ch"])
+        ech = np.unique(core2["ch"])
+        logging.error(
+            f"There are non-terminal missing residues missing in one of the chains {sch} and {ech} withiin start and target pdb files."
+        )
         return core1, core2, False
 
 
@@ -165,13 +174,7 @@ def multialigned(ca1, ca2, mer):
                 whole1 = np.append(whole1, cores[0], axis=0)
                 whole2 = np.append(whole2, cores[1], axis=0)
                 correct.append(cores[2])
-    if False in correct:
-        logging.critical("There are non-terminal missing residues.")
-        logging.critical("Please fix the structures manually to continue.")
-        logging.critical("FAIL")
-        return whole1, whole2, False
-    else:
-        return whole1, whole2, True
+    return whole1, whole2, all(correct)
 
 
 def findresid(shifts, nter, cter, resmap):
@@ -190,7 +193,8 @@ def findresid(shifts, nter, cter, resmap):
                 try:
                     resid[ids] = [int(nrs[0]), int(nrs[-1])]
                 except IndexError:
-                    logging.critical(
+                    logging.error("FAIL", stack_info=True)
+                    logging.error(
                         "PDB ID %s contains too little sequence or the alignment is problematic. Remove this structure and try again."
                         % id
                     )
@@ -225,7 +229,8 @@ def msa_clustal(infile, resmap, outfile, clustalopath, cwd, merinfo, query, totm
         if start is None and end is None:
             broken.append(record.id.split("|")[0])
             shifts[record.id] = []
-            logging.critical(
+            logging.error("FAIL", stack_info=True)
+            logging.error(
                 "%s contains insertions or missing residues, skipping this chain and the assembly it belongs to."
                 % record.id
             )
@@ -315,7 +320,7 @@ def find_resid_onetoone(structaln, resmap, blocks):
                 .columns
             )
             if len(nr) != len(keep):
-                logging.error("%s has incosistent sequence and residue numbering. Marked as broken." % ids)
+                logging.warning("%s has incosistent sequence and residue numbering. Marked as broken." % ids)
                 resids = resids.drop(ids, axis=0)
                 broken.append(ids.split("|")[0])
                 continue

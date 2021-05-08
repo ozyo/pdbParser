@@ -1,6 +1,5 @@
 # See COPYING for license
 
-# We need to read quite a bit of information from the REMARKS lines. So it is better to keep them in a seperate module.
 from os import getcwd
 from pathlib import Path
 from typing import List
@@ -28,10 +27,8 @@ def getpdb(pdbid: Path, download: bool = False, clean: bool = False, cwd: Path =
                 (cwd / pdbid).unlink()
             return pdblines
         except urllib.error.HTTPError as err:
-            if err.code == 404:
-                raise ValueError("PDB code not found")
-            else:
-                raise ValueError("Cannot reach PDB database, unknown error")
+            logging.error("FAIL", stack_info=True)
+            raise ValueError("PDB file cannot be downloaded")
     else:
         if (cwd / pdbid).is_file():
             logging.info(f"Opening file {pdbid}")
@@ -39,7 +36,11 @@ def getpdb(pdbid: Path, download: bool = False, clean: bool = False, cwd: Path =
                 pdblines = pdbfile.readlines()
             return pdblines
         else:
-            raise FileExistsError(f"{pdbid} not found in {cwd.absolute()}")
+            try:
+                raise FileNotFoundError(f"{pdbid} not found in {cwd.absolute()}")
+            except:
+                logging.error("FAIL", stack_info=True)
+                raise
 
 
 def check_multimodel(pdblines: List[str]) -> bool:
@@ -102,7 +103,11 @@ def extract_relevant_molid(molin: List[int], compndlist: List[str]):
         if not check_moltype_filter(compndlist[len(molin) :]):
             passing_mol.append(i + 1)
         if len(passing_mol) != 1:
-            raise ValueError("Current version cannot handle this pdb file, both interaction partners are proteins.")
+            try:
+                raise ValueError("Current version cannot handle this pdb file, both interaction partners are proteins.")
+            except:
+                logging.error("FAIL", stack_info=True)
+                raise
         if passing_mol[0] == len(molin) - 1:
             return compndlist[molin[passing_mol[0]] :]
         return compndlist[molin[passing_mol[0]] : molin[passing_mol[0] + 1]]
@@ -117,7 +122,12 @@ def extract_chains(mol_lines: List[str]):
     for line in mol_lines:
         if "CHAIN:" in line:
             return [i.strip().strip(";") for i in line.split(":")[1].split(",")]
-    raise ValueError("Cannot extract chain information.")
+    else:
+        try:
+            raise ValueError("Cannot extract chain information.")
+        except:
+            logging.error("FAIL", stack_info=True)
+            raise
 
 
 def find_chains(pdblines: List[str]) -> List[str]:
