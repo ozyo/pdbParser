@@ -8,6 +8,8 @@ import numpy as np
 import urllib.request, urllib.error, urllib.parse
 import logging
 
+from numpy.lib.arraysetops import unique
+
 FILTER_MOLTYPES = ["DNA", "RNA", "5'", "3'", "FAB", "ScFv"]
 
 
@@ -200,4 +202,7 @@ def coord(atomlines: List[str]) -> np.recarray:
         "element",
         "charge",
     )
-    return coords
+    unique_indices = np.sort(
+        np.unique(coords[["atname", "altloc", "resname", "ch", "resnr"]], return_index=True, axis=0)[1]
+    )
+    return coords[unique_indices]

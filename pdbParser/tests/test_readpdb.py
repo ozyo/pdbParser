@@ -66,6 +66,20 @@ LAST_ATOMS_TEST_PDB = [
 
 LAST_ATOMS_TEST_PDB_SHORT = [i[:60] for i in LAST_ATOMS_TEST_PDB]
 
+DUPLICATE_TEST_PDB = [
+    "ATOM   4005  O   GLN B 271     -20.348   4.657   4.099  1.00 31.34           O  \n",
+    "ATOM   4006  CB  GLN B 271     -20.068   3.067   6.959  1.00 30.59           C  \n",
+    "ATOM   4007  CG  GLN B 271     -20.350   1.718   7.641  1.00 30.95           C  \n",
+    "ATOM   4008  CD  GLN B 271     -18.966   1.143   7.945  1.00 32.20           C  \n",
+    "ATOM   4005  O   GLN B 271     -20.348   4.657   4.099  1.00 31.34           O  \n",
+    "ATOM   4009  OE1 GLN B 271     -18.243   1.762   8.735  1.00 32.58           O  \n",
+    "ATOM   4010  NE2 GLN B 271     -18.646   0.036   7.286  1.00 32.60           N  \n",
+    "ATOM   4005  O   GLN B 271     -20.348   4.657   4.099  1.00 31.34           O  \n",
+    "ATOM   4011  OXT GLN B 271     -21.819   3.067   4.468  1.00 31.48           O  \n",
+    "ATOM   4010  NE2 GLN B 271     -18.646   0.036   7.286  1.00 32.60           N  \n",
+    "ATOM   4007  CG  GLN B 271     -20.350   1.718   7.641  1.00 30.95           C  \n",
+]
+
 COORDS = np.array(
     [
         (4005, "O", "", "GLN", "B", 271, "", -20.348, 4.657, 4.099, 1.00, 31.34, "O", ""),
@@ -195,5 +209,6 @@ def test_read_atom():
 
 
 def test_coord():
+    np.testing.assert_array_equal(coord(DUPLICATE_TEST_PDB), COORDS, verbose=True)
     np.testing.assert_array_equal(coord(LAST_ATOMS_TEST_PDB), COORDS, verbose=True)
     np.testing.assert_array_equal(coord(LAST_ATOMS_TEST_PDB_SHORT), COORDS_SHORT, verbose=True)
