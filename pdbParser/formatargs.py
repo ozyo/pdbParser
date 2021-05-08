@@ -9,6 +9,7 @@ def format_ch(ch_arg):
     chlist = []
     tmplist = ch_arg.split(",")
     for sub in tmplist:
+        print(sub)
         if len(sub) == 3 and sub[1] == "-":
             sublist = sub.split("-")
             firstch = sublist[0]
@@ -30,7 +31,7 @@ def split_mer(mer, chlist):
     """
     if mer == len(chlist):
         return [chlist]
-    elif mer > len(chlist) or mer == 1:
+    elif len(chlist) > mer or mer == 1:
         if len(chlist) % mer == 0:
             moldivision = []
             for i in range(0, len(chlist), mer):
