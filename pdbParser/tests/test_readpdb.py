@@ -178,18 +178,15 @@ def test_find_chains():
     assert find_chains(TEST_PDB) == ["A", "B"]
 
 
-def gen_missing_array(lines):
-    return np.genfromtxt(lines, names=["REMARK", "465", "rname", "ch", "rid"], dtype=["U6", int, "U3", "U1", int])
-
-
 @pytest.mark.parametrize(
     "lines,chids,result",
     [
-        (TEST_PDB, ["A", "B"], gen_missing_array([])),
-        ((TEST_PDB + MISSING_RESIDUES), ["A", "B"], gen_missing_array(MISSING_RESIDUES[7:-1])),
+        (TEST_PDB, ["A", "B"], []),
+        ((TEST_PDB + MISSING_RESIDUES), ["A", "B"], MISSING_RESIDUES[7:-1]),
     ],
 )
 def test_extract_missing_residues(lines, chids, result):
+    result = np.genfromtxt(result, names=["REMARK", "465", "rname", "ch", "rid"], dtype=["U6", int, "U3", "U1", int])
     np.testing.assert_array_equal(extract_missing_residues(lines, chids), result)
 
 
