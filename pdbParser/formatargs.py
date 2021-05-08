@@ -1,5 +1,6 @@
 # See COPYING for license
 import logging
+from pdbParser.utils import ParserError
 
 
 def format_ch(ch_arg):
@@ -9,7 +10,6 @@ def format_ch(ch_arg):
     chlist = []
     tmplist = ch_arg.split(",")
     for sub in tmplist:
-        print(sub)
         if len(sub) == 3 and sub[1] == "-":
             sublist = sub.split("-")
             firstch = sublist[0]
@@ -20,8 +20,12 @@ def format_ch(ch_arg):
         elif len(sub) == 1 and isinstance(sub, str):
             chlist.append(sub)
         else:
-            logging.critical("FAIL", stack_info=True)
-            raise ValueError("Please supply the chain ids in these formats: A-E or A-C,E or A,B")
+            try:
+                raise ValueError("Please supply the chain ids in these formats: A-E or A-C,E or A,B")
+            except ValueError as err:
+                logging.error("FAIL", exc_info=err)
+                raise ParserError
+
     return chlist
 
 
@@ -38,8 +42,14 @@ def split_mer(mer, chlist):
                 moldivision.append(chlist[i : i + mer])
             return moldivision
         else:
-            logging.critical("FAIL", stack_info=True)
-            raise ValueError("Chain labels are not equal or multiple of total number of chains given.")
+            try:
+                raise ValueError("Chain labels are not equal or multiple of total number of chains given.")
+            except ValueError as err:
+                logging.exception("FAIL", exc_info=err)
+                raise ParserError
     else:
-        logging.critical("FAIL", stack_info=True)
-        raise ValueError(f"List of chain ids: {chlist} cannot be split to {mer}.")
+        try:
+            raise ValueError(f"List of chain ids: {chlist} cannot be split to {mer}.")
+        except ValueError as err:
+            logging.exception("FAIL", exc_info=err)
+            raise ParserError

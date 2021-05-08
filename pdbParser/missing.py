@@ -1,4 +1,5 @@
 # See COPYING for license
+from typing import List
 import numpy as np
 import logging
 
@@ -39,3 +40,11 @@ def missinginfo(r465, chlist, ca):
         return None
     else:
         return missinginfo
+
+
+def missing_chains(pdb: np.recarray, chains: List[str]):
+    pdb_chains = set(np.unique(pdb["ch"]))
+    if len(set(chains) - pdb_chains) == 0:
+        return False
+    else:
+        return True

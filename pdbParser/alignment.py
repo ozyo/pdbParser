@@ -9,6 +9,7 @@ import pandas as pd
 from itertools import groupby
 from operator import itemgetter
 import logging
+from pdbParser.utils import ParserError
 
 # tags: a aligned, s sequence, map residue name-nr map
 
@@ -192,13 +193,13 @@ def findresid(shifts, nter, cter, resmap):
                 nrs = nr.split("-")[noffset : coffset + 1]
                 try:
                     resid[ids] = [int(nrs[0]), int(nrs[-1])]
-                except IndexError:
-                    logging.error("FAIL", stack_info=True)
+                except IndexError as err:
+                    logging.exception("FAIL", exc_info=err)
                     logging.error(
                         "PDB ID %s contains too little sequence or the alignment is problematic. Remove this structure and try again."
                         % id
                     )
-                    exit()
+                    raise ParserError
     return resid
 
 
@@ -229,7 +230,6 @@ def msa_clustal(infile, resmap, outfile, clustalopath, cwd, merinfo, query, totm
         if start is None and end is None:
             broken.append(record.id.split("|")[0])
             shifts[record.id] = []
-            logging.error("FAIL", stack_info=True)
             logging.error(
                 "%s contains insertions or missing residues, skipping this chain and the assembly it belongs to."
                 % record.id

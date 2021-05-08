@@ -2,6 +2,7 @@
 
 from os import getcwd
 from pathlib import Path
+from pdbParser.utils import ParserError
 from typing import List
 import numpy as np
 import urllib.request, urllib.error, urllib.parse
@@ -27,8 +28,8 @@ def getpdb(pdbid: Path, download: bool = False, clean: bool = False, cwd: Path =
                 (cwd / pdbid).unlink()
             return pdblines
         except urllib.error.HTTPError as err:
-            logging.error("FAIL", stack_info=True)
-            raise ValueError("PDB file cannot be downloaded")
+            logging.error("FAIL", exc_info=err)
+            raise ParserError
     else:
         if (cwd / pdbid).is_file():
             logging.info(f"Opening file {pdbid}")
@@ -38,9 +39,9 @@ def getpdb(pdbid: Path, download: bool = False, clean: bool = False, cwd: Path =
         else:
             try:
                 raise FileNotFoundError(f"{pdbid} not found in {cwd.absolute()}")
-            except:
-                logging.error("FAIL", stack_info=True)
-                raise
+            except Exception as err:
+                logging.error("FAIL", exc_info=err)
+                raise ParserError
 
 
 def check_multimodel(pdblines: List[str]) -> bool:
@@ -105,9 +106,9 @@ def extract_relevant_molid(molin: List[int], compndlist: List[str]):
         if len(passing_mol) != 1:
             try:
                 raise ValueError("Current version cannot handle this pdb file, both interaction partners are proteins.")
-            except:
-                logging.error("FAIL", stack_info=True)
-                raise
+            except Exception as err:
+                logging.error("FAIL", exc_info=err)
+                raise ParserError
         if passing_mol[0] == len(molin) - 1:
             return compndlist[molin[passing_mol[0]] :]
         return compndlist[molin[passing_mol[0]] : molin[passing_mol[0] + 1]]
@@ -127,7 +128,7 @@ def extract_chains(mol_lines: List[str]):
             raise ValueError("Cannot extract chain information.")
         except:
             logging.error("FAIL", stack_info=True)
-            raise
+            raise ParserError
 
 
 def find_chains(pdblines: List[str]) -> List[str]:
