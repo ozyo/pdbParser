@@ -8,8 +8,6 @@ import numpy as np
 import urllib.request, urllib.error, urllib.parse
 import logging
 
-from numpy.lib.arraysetops import unique
-
 FILTER_MOLTYPES = ["DNA", "RNA", "5'", "3'", "FAB", "ScFv"]
 
 
