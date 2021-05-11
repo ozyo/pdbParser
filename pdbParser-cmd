@@ -5,6 +5,7 @@ from math import e
 from os import getcwd
 from itertools import product
 from pathlib import Path
+from pdbParser.modifypdb import renumber
 from pdbParser.parser import parse_ca
 from pdbParser.readpdb import check_multimodel, getpdb
 from pdbParser.writepdb import writeca
@@ -50,6 +51,8 @@ argsparser.add_argument(
     metavar="PDB IDs to skip",
     help="Provide a list of PDBs to skip: in the form of ID1A,ID1B,...",
 )
+argsparser.add_argument("--renumber", dest="renumber", help="Renumber residues consecutively", action="store_true")
+argsparser.set_defaults(renumber=False)
 argsparser.set_defaults(prepENS=None)
 argsparser.set_defaults(exclude=None)
 
@@ -131,6 +134,9 @@ try:
         else:
             score, ecore, correct = multialigned(start, end, args.mer)
         if correct is True:
+            if args.renumber:
+                score = renumber(score)
+                ecore = renumber(ecore)
             writeca(score, args.cwd + "/start.pdb")
             writeca(ecore, args.cwd + "/target.pdb")
             logging.info("SUCCESS")
