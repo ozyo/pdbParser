@@ -1,4 +1,5 @@
 # See COPYING for license
+from pathlib import Path
 from Bio import pairwise2
 from Bio.Align import substitution_matrices
 from Bio.SeqUtils import seq1 as letter
@@ -143,7 +144,7 @@ def getaligned(ca1, ca2):
     except IndexError:
         logging.error("Sequences contain large shifts. Please check the sequence alignment.")
         logging.error(
-            "This usually happens when two different types of proteins are given as start and target and the target structure is shorter than the start."
+            "This usually happens when two unrelated proteins are given as start and target and the target structure is shorter than the start."
         )
         return [], [], False
     # since we mapped it to the opposite in the steps above, we can return back to normal
@@ -203,10 +204,10 @@ def findresid(shifts, nter, cter, resmap):
     return resid
 
 
-def msa_clustal(infile, resmap, outfile, clustalopath, cwd, merinfo, query, totmer, alnf=None):
+def msa_clustal(infile:Path, resmap:Path, outfile:Path, clustalopath:Path, cwd:Path, merinfo:Path, query:str, alnf=None):
     resmap = cwd + "/" + resmap
     if alnf is None:
-        clustalomega_cline = ClustalOmegaCommandline(
+        clustalomega_cline = ClustalOmegaCommandline( cmd=clustalopath,
             infile=cwd + "/" + infile, outfile=cwd + "/" + outfile, verbose=False, auto=True, force=True
         )
         clustalomega_cline()

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import argparse, logging
-from math import e
 from os import getcwd
 from itertools import product
 from pathlib import Path
