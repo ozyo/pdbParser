@@ -16,15 +16,16 @@ reload(a)
 class PDBInfo():
     def __init__(self, query, mer, exclude=None):
         self.exclude = exclude
-        self.query = query
+        self.query = [query] if isinstance(query,str) else query
         self.mer = mer
-        self.result, self.refseq = self.get_pdbinfo()
+        self.result, self.refseqs = self.get_pdbinfo()
         self.broken = None
-        self.seqfilename = query + "_seq.txt"
-        self.residmapfilename = query + "_residmap.txt"
-        self.alnfasta = query + "_init.aln.txt"
+        self.seqfilename = ".".join(self.query) + "_seq.txt"
+        self.residmapfilename = ".".join(self.query) + "_residmap.txt"
+        self.alnfasta = ".".join(self.query) + "_init.aln.txt"
         self.coremer = None
         self.coreresids = None
+
         self.altloc = "A"
         self.core_blocks = None
         
@@ -48,65 +49,66 @@ class PDBInfo():
         return styled
 
     def get_pdbinfo(self):
-        URLbase = ('http://www.uniprot.org/uniprot/')
-
-        idparam = {
-            'query': 'ID:{}'.format(self.query),
-            'format': 'tab',
-            'columns': 'database(PDB),sequence'
-        }
-        idparam=urllib.parse.urlencode(idparam)
-        result1 = urllib.request.Request(URLbase+'?'+idparam)
-        try:
-            result1=urllib.request.urlopen(result1).readlines()[1]
-        except:
-            logging.error('Cannot retrive the information for query number %s' %(self.query))
-            return(None,None)
-
-        if len(result1) > 0:
-            pdbids,refseq=result1.split(b'\t')
-            refseq=refseq.decode('utf-8')
-            pdbids=['{}'.format(i.decode('utf-8')) for i in pdbids.split(b';') if len(i)>1]
-
-            if self.exclude is not None:
-                try:
-                    for ex in self.exclude:
-                        pdbids.remove(ex)
-                        logging.info('Removing PDB ID %s' %ex)
-                except KeyError:
-                    logging.warning('Did not find the PDB ID %s' %ex)
-
-            chainids={}
-            for i in urllib.request.urlopen(URLbase+self.query+'.txt').readlines():
-                if i.startswith (b'DR   PDB;') and i.split(b';')[3] not in ['NMR;','model;']:
-                    chainids[i.split(b';')[1].strip().decode('utf-8')]=i.split(b';')[4].split(b'=')[0].strip().decode('utf-8')
+        refseqs={}
         returninfo={}
-        tmpids=pdbids.copy()
-        for pdb in tmpids:
-            count=0
+        for query in self.query:
+            URLbase = ('http://www.uniprot.org/uniprot/')
+
+            idparam = {
+                'query': 'ID:{}'.format(query),
+                'format': 'tab',
+                'columns': 'database(PDB),sequence'
+            }
+            idparam=urllib.parse.urlencode(idparam)
+            result1 = urllib.request.Request(URLbase+'?'+idparam)
             try:
-                chains=chainids[pdb]
-            except KeyError:
-                logging.warning('PDB ID %s is either an NMR structure or a model. Skipping' %pdb)
+                result1=urllib.request.urlopen(result1).readlines()[1]
+            except:
+                logging.warning('Cannot retrive the information for query number %s' %(query))
                 continue
-            if "/" in chains:
-                chains=chains.split('/')
-            if len(chains) == self.mer:
-                returninfo[pdb]=[count+1,[chains]]
-            elif len(chains) > self.mer:
-                if len(chains) % self.mer == 0:
-                    newchains=[]
-                    for chnr in range(0,len(chains),self.mer):
-                        newchains.append(chains[chnr:chnr+self.mer])
-                        count=count+1
-                    returninfo[pdb]=[count,newchains]
+
+            if len(result1) > 0:
+                pdbids,refseq=result1.split(b'\t')
+                refseqs[query]=refseq.decode('utf-8')
+                pdbids=['{}'.format(i.decode('utf-8')) for i in pdbids.split(b';') if len(i)>1]
+
+                if self.exclude is not None:
+                    try:
+                        for ex in self.exclude:
+                            pdbids.remove(ex)
+                    except ValueError:
+                        pass
+
+                chainids={}
+                for i in urllib.request.urlopen(URLbase+query+'.txt').readlines():
+                    if i.startswith (b'DR   PDB;') and i.split(b';')[3] not in ['NMR;','model;']:
+                        chainids[i.split(b';')[1].strip().decode('utf-8')]=i.split(b';')[4].split(b'=')[0].strip().decode('utf-8')
+            tmpids=pdbids.copy()
+            for pdb in tmpids:
+                count=0
+                try:
+                    chains=chainids[pdb]
+                except KeyError:
+                    logging.warning('PDB ID %s is either an NMR structure or a model. Skipping' %pdb)
+                    continue
+                if "/" in chains:
+                    chains=chains.split('/')
+                if len(chains) == self.mer:
+                    returninfo[pdb]=[count+1,[chains]]
+                elif len(chains) > self.mer:
+                    if len(chains) % self.mer == 0:
+                        newchains=[]
+                        for chnr in range(0,len(chains),self.mer):
+                            newchains.append(chains[chnr:chnr+self.mer])
+                            count=count+1
+                        returninfo[pdb]=[count,newchains]
+                    else:
+                        logging.critical('Cannot process PDB id %s. It does not contain a complete set' %pdb)
                 else:
-                    logging.critical('Cannot process PDB id %s. It does not contain a complete set' %pdb)
-            else:
-                logging.critical('Cannot process PDB id %s. It does not contain complete set' %pdb)
+                    logging.critical('Cannot process PDB id %s. It does not contain complete set' %pdb)
         if len(returninfo) == 0:
             return(None,None) 
-        return(returninfo,refseq)
+        return(returninfo,refseqs)
 
     def downloadPDB(self,cwd:Path):
         pdb_dir=cwd/"rcsb"
@@ -131,7 +133,8 @@ class PDBInfo():
         clean_pdb_dir.mkdir(exist_ok=True)
         outseq=open(cwd/self.seqfilename,'w')
         outresmap=open(cwd/self.residmapfilename,'w')
-        outseq.write(f'>refseq_\n{self.refseq}\n')
+        for query,seq in self.refseqs.items():
+            outseq.write(f'>refseq_{query}\n{seq}\n')
         for pdb in self.result.keys():
             pdb_content=open(pdb_dir/f"{pdb}.pdb").readlines()
             for mol in range(0,self.result[pdb][0]):

@@ -4,13 +4,11 @@ from Bio import pairwise2
 from Bio.Align import substitution_matrices
 from Bio.SeqUtils import seq1 as letter
 from Bio.Align.Applications import ClustalOmegaCommandline
-from Bio import AlignIO
 import numpy as np
 import pandas as pd
 from itertools import groupby
 from operator import itemgetter
 import logging
-from pdbParser.utils import ParserError
 
 # tags: a aligned, s sequence, map residue name-nr map
 
@@ -209,6 +207,17 @@ def find_cter_gap(seqaln):
         else:
             return pos - 1
 
+
+def clean_empty_blocks(seqaln,blocks):
+    block_keys=list(blocks.keys()).copy()
+    for block in block_keys:
+        filt = seqaln.loc[:, blocks[block]]
+        missing = filt.apply(lambda x:1 if set("".join(x)) == {"-"} else 0,axis=1)
+        if sum(missing) == len(filt.index):
+            logging.info("Block %s is not resolved in any of the structures." % block)
+            blocks.pop(block)
+
+
 def find_resid_onetoone(seqaln, resmap, blocks):
     """
     Replaces the sequence with the residue numbers and keeps the gaps etc. Also filters the broken structures.
@@ -216,31 +225,30 @@ def find_resid_onetoone(seqaln, resmap, blocks):
     this is much better and easier to follow. So in the future port everything to pandas.
     """
     broken, resids = align_resid_to_seq(resmap,seqaln)
-    nter = find_nter_gap(seqaln)
-    cter = find_cter_gap(seqaln)
+    clean_empty_blocks(seqaln,blocks)
     block_keys = list(sorted(blocks.keys()))
     for block in block_keys:
         start = blocks[block][0]
         end = blocks[block][-1]
+        nter = find_nter_gap(seqaln.loc[:,start:end])
+        cter = find_cter_gap(seqaln.loc[:,start:end])
         to_remove = []
-        if block == block_keys[0] and nter is not None and  blocks[block][0] < nter:
+        if nter is not None and  blocks[block][0] < nter:
             start = nter
             for i in blocks[block]:
                 if i < nter:
                     to_remove.append(i)
                 else:
                     break
-        if block == block_keys[-1] and cter is not None and blocks[block][-1] > cter:
+        if cter is not None and blocks[block][-1] > cter:
             end = cter
             for i in  blocks[block][::-1]:
                 if i > cter:
                     to_remove.append(i)
                 else:
                     break
-        print(to_remove)
         blocks[block]=[i for i in blocks[block] if i not in to_remove]
         filt = resids.loc[:, range(start,end+1)]
-        missing = 0
         tmpbroken = []
         for ids in filt.index:
             if ids in broken:
@@ -248,20 +256,15 @@ def find_resid_onetoone(seqaln, resmap, blocks):
             else:
                 gaps = return_gaps(filt.loc[[ids]])
                 if len(gaps) == len(filt.columns) or len(gaps) >= len(filt.columns) / 2.0:
-                    missing += 1
                     tmpbroken.append(ids)
                 else:
                     if len(gaps) > 0:
                         logging.warning("%s has missing residues in block %s, marked as broken." % (ids, block))
                         broken.append(ids.split("|")[0])
-        if missing == len(filt.index):
-            logging.warning("Block %s is not resolved in any of the structures." % block)
-            blocks.pop(block)
-        else:
-            if len(tmpbroken) > 0:
-                for tmp in tmpbroken:
-                    logging.warning("%s has missing residues in block %s, marked as broken" % (tmp, block))
-                    broken.append(tmp.split("|")[0])
+        if len(tmpbroken) > 0:
+            for tmp in tmpbroken:
+                logging.warning("%s has missing residues in block %s, marked as broken" % (tmp, block))
+                broken.append(tmp.split("|")[0])
     return (resids, list(set(broken)))
 
 
