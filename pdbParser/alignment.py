@@ -205,15 +205,15 @@ def findresid(shifts, nter, cter, resmap):
 
 
 def msa_clustal(infile:Path, resmap:Path, outfile:Path, clustalopath:Path, cwd:Path, merinfo:Path, query:str, alnf=None):
-    resmap = cwd + "/" + resmap
+    resmap = cwd /resmap
     if alnf is None:
         clustalomega_cline = ClustalOmegaCommandline( cmd=clustalopath,
-            infile=cwd + "/" + infile, outfile=cwd + "/" + outfile, verbose=False, auto=True, force=True
+            infile=(cwd/infile).as_posix(), outfile=(cwd/outfile).as_posix(), verbose=False, auto=True, force=True
         )
         clustalomega_cline()
-        msa = AlignIO.read(cwd + "/" + outfile, "fasta")
+        msa = AlignIO.read((cwd/outfile).as_posix(), "fasta")
     else:
-        msa = AlignIO.read(cwd + "/" + alnf, "fasta")
+        msa = AlignIO.read((cwd/alnf).as_posix(), "fasta")
     broken = []
     nter = 0
     cter = msa.get_alignment_length()
@@ -256,7 +256,7 @@ def msa_clustal(infile:Path, resmap:Path, outfile:Path, clustalopath:Path, cwd:P
             else:
                 amer.append(ch)
         completemers[pdb] = amer
-    AlignIO.write(core, cwd + "/" + query + "_core.fasta", format="fasta")
+    AlignIO.write(core, (cwd/f"{query}_core.fasta").as_posix(), format="fasta")
     return (completemers, resid, list(set(broken)))
 
 

@@ -2,7 +2,7 @@
 #https://salilab.org/modeller/manual/node35.html
 from modeller import *
 from modeller.automodel import *
-class MyLoop(loopmodel):
+class MyLoop(LoopModel):
     # This routine picks the residues to be refined by loop modeling
     # Note that the residue numbering is based on internal MODELLER numbering
     def select_loop_atoms(self):

@@ -7,7 +7,7 @@ import urllib
 
 from pdbParser.clean_pdb import getca_forchains
 from pdbParser.parser import parse_ca, pdb_title
-from pdbParser.readpdb import getpdb
+from pdbParser.readpdb import coord, getpdb
 from pdbParser.writepdb import writeca
 from pdbParser.alignment import getseq, msa_clustal, parse_fasta_aln_multi
 
@@ -26,7 +26,7 @@ class PDBInfo():
         self.altloc = "A"
         
     def core_show(self, cwd, positions=[]):
-        alndata, _ = parse_fasta_aln_multi(cwd + "/" + self.alnfasta)
+        alndata, _ = parse_fasta_aln_multi(cwd/self.alnfasta)
         self.alndata = alndata
         if len(positions) == 2:
             alndata = self.alndata.iloc[:, positions[0] : positions[-1]]
@@ -78,97 +78,95 @@ class PDBInfo():
                 if i.startswith (b'DR   PDB;') and i.split(b';')[3] not in ['NMR;','model;']:
                     chainids[i.split(b';')[1].strip().decode('utf-8')]=i.split(b';')[4].split(b'=')[0].strip().decode('utf-8')
         returninfo={}
-        tmpids=[*pdbids]
+        tmpids=pdbids.copy()
         for pdb in tmpids:
             count=0
             try:
                 chains=chainids[pdb]
             except KeyError:
                 logging.warning('PDB ID %s is either an NMR structure or a model. Skipping' %pdb)
-                pdbids.remove(pdb)
                 continue
-            try:
+            if "/" in chains:
                 chains=chains.split('/')
-            except AttributeError:
-                continue
-            else:
-                nchain=len(chains)
-                if nchain == self.mer:
-                    returninfo[pdb]=[count+1,[chains]]
-                elif nchain > self.mer:
-                    if nchain % self.mer == 0:
-                        newchains=[]
-                        for chnr in range(0,nchain,self.mer):
-                            newchains.append(chains[chnr:chnr+self.mer])
-                            count=count+1
-                        returninfo[pdb]=[count,newchains]
-                    else:
-                        logging.critical('Cannot process PDB id %s. It does not contain a complete set' %pdb)
-                        chainids.pop(pdb)
-                        pdbids.remove(pdb)
+            if len(chains) == self.mer:
+                returninfo[pdb]=[count+1,[chains]]
+            elif len(chains) > self.mer:
+                if len(chains) % self.mer == 0:
+                    newchains=[]
+                    for chnr in range(0,len(chains),self.mer):
+                        newchains.append(chains[chnr:chnr+self.mer])
+                        count=count+1
+                    returninfo[pdb]=[count,newchains]
                 else:
-                    logging.critical('Cannot process PDB id %s. It does not contain complete set' %pdb)
-                    chainids.pop(pdb)
-                    pdbids.remove(pdb)
+                    logging.critical('Cannot process PDB id %s. It does not contain a complete set' %pdb)
+            else:
+                logging.critical('Cannot process PDB id %s. It does not contain complete set' %pdb)
         if len(returninfo) == 0:
             return(None,None) 
         return(returninfo,refseq)
 
-    def downloadPDB(self, pdb_dir:Path):
+    def downloadPDB(self,cwd:Path):
+        pdb_dir=cwd/"rcsb"
         pdb_dir.mkdir(exist_ok=True)
         delete = []
         for pdb in self.result.keys():
-            pdb_content=getpdb(Path(pdb),True,pdb_dir)
-            if pdb_title(pdb_content) is True:
-                try:
-                    delete.append(pdb)
-                    logging.critical('PDB ID %s contains cannot be processed, possibly a chimera, skipping this file' %pdb)
-                    continue
-                except KeyError:
-                    logging.info('This structure was already removed. I am an example of bad programming. Nothing to worry about')
-                    continue
+            if not (pdb_dir/f"{pdb}.pdb").is_file():
+                pdb_content=getpdb(Path(pdb),True,pdb_dir)
+                with open(pdb_dir/f"{pdb}.pdb","w") as outf:
+                    outf.writelines(pdb_content)
             else:
-                for mol in range(0,self.result[pdb][0]):
-                    ca = parse_ca(pdb_content, [self.result[pdb][1][mol]], self.altloc)
-                    writeca(ca,pdb_dir/f"{pdb}_{mol+1}.pdb")
+                pdb_content=open(pdb_dir/f"{pdb}.pdb").readlines()
+            if pdb_title(pdb_content) is True:
+                delete.append(pdb)
+                logging.critical('PDB ID %s cannot be processed, possibly a chimera, skipping this file' %pdb)
+                continue
         [self.result.pop(key) for key in delete]
 
-    def write_chain_sequence(self,cwd,pdb_dir):
-        outseq=open(cwd+'/'+self.seqfilename,'w')
-        outresmap=open(cwd+'/'+self.residmapfilename,'w')
-        outseq.write('>refseq'+'\n'+self.refseq+'\n')
+    def process_pdbs(self,cwd:Path,overwrite_pdb:bool=False):
+        pdb_dir=cwd/"rcsb"
+        clean_pdb_dir=cwd/"clean_pdbs"
+        clean_pdb_dir.mkdir(exist_ok=True)
+        outseq=open(cwd/self.seqfilename,'w')
+        outresmap=open(cwd/self.residmapfilename,'w')
+        outseq.write(f'>refseq\n{self.refseq}\n')
         for pdb in self.result.keys():
-            pdb_content = getpdb(pdb,False,cwd=pdb_dir)
+            pdb_content=open(pdb_dir/f"{pdb}.pdb").readlines()
             for mol in range(0,self.result[pdb][0]):
+                if overwrite_pdb or not (clean_pdb_dir/f"{pdb}_{mol+1}.pdb").is_file():
+                    ca = parse_ca(pdb_content, [self.result[pdb][1][mol]], self.altloc)
+                    writeca(ca,clean_pdb_dir/f"{pdb}_{mol+1}.pdb")
+                else:
+                    ca = coord(open(clean_pdb_dir/f"{pdb}_{mol+1}.pdb").readlines())
                 for ch in self.result[pdb][1][mol]:
-                    ca=getca_forchains(pdb_content,self.altloc,ch)
-                    seq,mapx=getseq(ca)
+                    ca_ch=getca_forchains(ca,[ch])
+                    seq,mapx=getseq(ca_ch)
                     outseq.write('>'+pdb+'_'+str(mol+1)+'.pdb'+'|'+ch+'|'+'\n'+seq+'\n')
-                    code,name,nr=zip(*mapx)
+                    _code,_name,nr=zip(*mapx)
                     outresmap.write('>'+pdb+'_'+str(mol+1)+'.pdb'+'|'+ch+'|'+'\n'+'-'.join([str(i) for i in nr])+'\n')
         outseq.close()
         outresmap.close()
+        
 
     def msa(self,cwd,clustalopath,alnf=None):
-        outfile=cwd+'/'+self.alnfasta
-        self.coremer,self.coreresids,self.broken=msa_clustal(self.seqfilename,self.residmapfilename,outfile,clustalopath,cwd,self.result,self.query,alnf)
+        self.coremer,self.coreresids,self.broken=msa_clustal(self.seqfilename,self.residmapfilename,self.alnfasta,clustalopath,cwd,self.result,self.query,alnf)
     
     def getcore(self,cwd):
+        clean_pdb_dir=cwd/"clean_pdbs"
         complete=self.coremer
         resids=self.coreresids
         broken=self.broken
         for pdb in complete:
             if pdb in broken:
                 try:
-                    os.rename(cwd+'/'+pdb,cwd+'/'+"broken_"+pdb)
+                    os.rename(clean_pdb_dir/pdb,clean_pdb_dir/f"broken_{pdb}")
                     continue
                 except (OSError,IOError):
                     continue
             chains=complete[pdb]
             try:
-                pdblines=open(cwd+'/'+pdb,'r').readlines()
+                pdblines=coord(open(clean_pdb_dir/pdb,'r').readlines())
             except (OSError,IOError):
-                logging.warning('File does not exist: '+pdb+' skipped')
+                logging.warning(f'File does not exist: {pdb} skipped')
                 continue
             ca=getca_forchains(pdblines,[chains],order=False)
             newca=None
@@ -178,5 +176,5 @@ class PDBInfo():
                     newca=ca[(ca['ch']==ch)&(ca['resnr']>=nter) & (ca['resnr']<=cter)]
                 else:
                     newca=np.concatenate([newca,ca[(ca['ch']==ch)&(ca['resnr']>=nter) & (ca['resnr']<=cter)]])
-            writeca(newca,cwd+'/'+'correct_'+pdb)
-            os.remove(cwd+'/'+pdb)
+            writeca(newca,clean_pdb_dir/f'correct_{pdb}')
+            os.remove(clean_pdb_dir/pdb)
