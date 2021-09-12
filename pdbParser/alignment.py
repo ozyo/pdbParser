@@ -63,64 +63,6 @@ def findgap(aca):
     return start, end
 
 
-def findinsertions(aca):
-    # Use this function with a reference sequence alignment result to find insertions
-    i = 0
-    start = i
-    end = start + 1
-    for i in range(0, len(aca)):
-        if aca[i] != "-":
-            start = i
-            break
-    subaca = aca[i:]
-    lastelem = len(subaca) - 1
-    while lastelem >= 0:
-        if subaca[lastelem] != "-":
-            end = lastelem + start
-            break
-        lastelem = lastelem - 1
-    insertions = []
-    for i in range(start, end + 1):
-        if aca[i] == "-":
-            insertions.append(i)
-    return insertions
-
-
-def findtergap(aca, insertions):
-    i = 0
-    start = i
-    end = start + 1
-    for i in range(0, len(aca)):
-        if aca[i] != "-":
-            start = i
-            break
-    subaca = aca[i:]
-    lastelem = len(subaca) - 1
-    while lastelem >= 0:
-        if subaca[lastelem] != "-":
-            end = lastelem + start
-            break
-        lastelem = lastelem - 1
-    broken = False
-    insertion = False
-    for i in range(start, end + 1):
-        if i in insertions and aca[i] == "-":
-            continue
-        elif i in insertions and aca[i] != "-":
-            insertion = True
-            break
-        else:
-            if aca[i] == "-":
-                broken = True
-                break
-    if broken is True:
-        return None, None
-    if insertion is True:
-        return None, None
-    else:
-        return start, end
-
-
 def getaligned(ca1, ca2):
     sca1, mapca1 = getseq(ca1)
     sca2, mapca2 = getseq(ca2)
@@ -179,86 +121,6 @@ def multialigned(ca1, ca2, mer):
     return whole1, whole2, all(correct)
 
 
-def findresid(shifts, nter, cter, resmap):
-    resmap = open(resmap, "r").read().split(">")
-    resid = {}
-    for pdb in resmap:
-        if len(pdb) > 2:
-            ids, nr = pdb.split("\n")[0:2]
-            if ids in shifts.keys():
-                if len(shifts[ids]) == 0:
-                    resid[ids] = [None, None]
-                    continue
-                noffset = nter - shifts[ids][0]
-                coffset = cter - nter + noffset
-                nrs = nr.split("-")[noffset : coffset + 1]
-                try:
-                    resid[ids] = [int(nrs[0]), int(nrs[-1])]
-                except IndexError as err:
-                    logging.exception("FAIL", exc_info=err)
-                    logging.error(
-                        "PDB ID %s contains too little sequence or the alignment is problematic. Remove this structure and try again."
-                        % id
-                    )
-                    raise ParserError
-    return resid
-
-
-def msa_clustal(infile:Path, resmap:Path, outfile:Path, clustalopath:Path, cwd:Path, merinfo:Path, query:str, alnf=None):
-    resmap = cwd /resmap
-    if alnf is None:
-        clustalomega_cline = ClustalOmegaCommandline( cmd=clustalopath,
-            infile=(cwd/infile).as_posix(), outfile=(cwd/outfile).as_posix(), verbose=False, auto=True, force=True
-        )
-        clustalomega_cline()
-        msa = AlignIO.read((cwd/outfile).as_posix(), "fasta")
-    else:
-        msa = AlignIO.read((cwd/alnf).as_posix(), "fasta")
-    broken = []
-    nter = 0
-    cter = msa.get_alignment_length()
-    shifts = {}
-    insertions = []
-    for record in msa:
-        if record.id == "refseq":
-            insertions = findinsertions(str(record.seq))
-            break
-    for record in msa:
-        if record.id == "refseq":
-            continue
-        aln = str(record.seq)
-        start, end = findtergap(aln, insertions)
-        if start is None and end is None:
-            broken.append(record.id.split("|")[0])
-            shifts[record.id] = []
-            logging.error(
-                "%s contains insertions or missing residues, skipping this chain and the assembly it belongs to."
-                % record.id
-            )
-            continue
-        else:
-            shifts[record.id] = [start, end]
-            if start is not None and start > nter:
-                nter = start
-            if end is not None and end < cter:
-                cter = end
-    core = msa[:, nter : cter + 1]
-    resid = findresid(shifts, nter, cter, resmap)
-    completemers = {}
-    fullids = list(set([key.split("|")[0] for key in resid.keys()]))
-    for pdb in fullids:
-        pdbid, mer = pdb.split(".")[0].split("_")
-        amer = []
-        # merinfo[pdbid] #What this line was supposed to be ?
-        for ch in merinfo[pdbid][1][int(mer) - 1]:
-            if pdb + "|" + ch + "|" in broken:
-                continue
-            else:
-                amer.append(ch)
-        completemers[pdb] = amer
-    AlignIO.write(core, (cwd/f"{query}_core.fasta").as_posix(), format="fasta")
-    return (completemers, resid, list(set(broken)))
-
 def parse_fasta_aln_multi(alnf):
     """
     Parses an alignment file generated with sequences from multiple organisms and the structures.
@@ -298,22 +160,21 @@ def find_core(refaln):
     return filtblocks
 
 
-def find_resid_onetoone(structaln, resmap, blocks):
-    """
-    Replaces the sequence with the residue numbers and keeps the gaps etc. Also filters the broken structures.
-    This is an easier function to use than the above functions. The previous ones are kept since they are working but
-    this is much better and easier to follow. So in the future port everything to pandas.
-    """
-    resids = structaln.copy()
+def return_gaps(row:pd.DataFrame):
+    return row[row=="-"].dropna(axis=1).columns.to_list()
+
+
+def align_resid_to_seq(resmap,seqaln):
     resmap = open(resmap, "r").read().split(">")
-    broken = []
+    resids = seqaln.copy()
+    broken=[]
     for entry in resmap:
         if len(entry) > 2:
             ids, nr = entry.split("\n")[0:2]
             nr = nr.split("-")
-            gaps = structaln.loc[[ids]][structaln == "-"].dropna(axis=1).columns.to_list()
+            gaps = return_gaps(seqaln.loc[[ids]])
             keep = (
-                structaln.loc[
+                seqaln.loc[
                     [ids],
                 ]
                 .drop(gaps, axis=1)
@@ -327,18 +188,65 @@ def find_resid_onetoone(structaln, resmap, blocks):
             else:
                 for ind, i in enumerate(keep):
                     resids[i][ids] = nr[ind]
+    return broken,resids
 
-    for block in list(blocks.keys()):
+
+def find_nter_gap(seqaln):
+    pos = None
+    for col in seqaln.columns:
+        content = list(seqaln[col].unique())
+        if "-" in content:
+            pos = col
+        else:
+            return pos + 1
+
+def find_cter_gap(seqaln):
+    pos = None
+    for col in list(seqaln.columns)[::-1]:
+        content = list(seqaln[col].unique())
+        if "-" in content:
+            pos = col
+        else:
+            return pos - 1
+
+def find_resid_onetoone(seqaln, resmap, blocks):
+    """
+    Replaces the sequence with the residue numbers and keeps the gaps etc. Also filters the broken structures.
+    This is an easier function to use than the above functions. The previous ones are kept since they are working but
+    this is much better and easier to follow. So in the future port everything to pandas.
+    """
+    broken, resids = align_resid_to_seq(resmap,seqaln)
+    nter = find_nter_gap(seqaln)
+    cter = find_cter_gap(seqaln)
+    block_keys = list(sorted(blocks.keys()))
+    for block in block_keys:
         start = blocks[block][0]
-        end = blocks[block][-1] + 1
-        filt = resids.iloc[:, start:end]
+        end = blocks[block][-1]
+        to_remove = []
+        if block == block_keys[0] and nter is not None and  blocks[block][0] < nter:
+            start = nter
+            for i in blocks[block]:
+                if i < nter:
+                    to_remove.append(i)
+                else:
+                    break
+        if block == block_keys[-1] and cter is not None and blocks[block][-1] > cter:
+            end = cter
+            for i in  blocks[block][::-1]:
+                if i > cter:
+                    to_remove.append(i)
+                else:
+                    break
+        print(to_remove)
+        blocks[block]=[i for i in blocks[block] if i not in to_remove]
+        filt = resids.loc[:, range(start,end+1)]
         missing = 0
         tmpbroken = []
         for ids in filt.index:
             if ids in broken:
                 continue
             else:
-                gaps = filt.loc[[ids]][filt == "-"].dropna(axis=1).columns.to_list()
+                gaps = return_gaps(filt.loc[[ids]])
                 if len(gaps) == len(filt.columns) or len(gaps) >= len(filt.columns) / 2.0:
                     missing += 1
                     tmpbroken.append(ids)

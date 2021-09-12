@@ -9,7 +9,9 @@ from pdbParser.clean_pdb import get_chain_order, getca_forchains
 from pdbParser.parser import parse_ca, pdb_title
 from pdbParser.readpdb import coord, getpdb
 from pdbParser.writepdb import writeca
-from pdbParser.alignment import aln_struct_to_core, getseq, msa_clustal, parse_fasta_aln_multi
+from pdbParser import alignment as a # import aln_struct_to_core, getseq, parse_fasta_aln_multi
+from importlib import reload
+reload(a)
 
 class PDBInfo():
     def __init__(self, query, mer, exclude=None):
@@ -27,7 +29,7 @@ class PDBInfo():
         self.core_blocks = None
         
     def core_show(self, cwd, positions=[]):
-        alndata, _ = parse_fasta_aln_multi(cwd/self.alnfasta)
+        alndata, _ = a.parse_fasta_aln_multi(cwd/self.alnfasta)
         self.alndata = alndata
         if len(positions) == 2:
             alndata = self.alndata.iloc[:, positions[0] : positions[-1]]
@@ -140,52 +142,19 @@ class PDBInfo():
                     ca = coord(open(clean_pdb_dir/f"{pdb}_{mol+1}.pdb").readlines())
                 for ch in self.result[pdb][1][mol]:
                     ca_ch=getca_forchains(ca,[ch])
-                    seq,mapx=getseq(ca_ch)
+                    seq,mapx=a.getseq(ca_ch)
                     outseq.write('>'+pdb+'_'+str(mol+1)+'.pdb'+'|'+ch+'|'+'\n'+seq+'\n')
                     _code,_name,nr=zip(*mapx)
                     outresmap.write('>'+pdb+'_'+str(mol+1)+'.pdb'+'|'+ch+'|'+'\n'+'-'.join([str(i) for i in nr])+'\n')
         outseq.close()
-        outresmap.close()
-        
+        outresmap.close()        
 
-    def msa(self,cwd,clustalopath,alnf=None):
-        self.coremer,self.coreresids,self.broken=msa_clustal(self.seqfilename,self.residmapfilename,self.alnfasta,clustalopath,cwd,self.result,self.query,alnf)
-    
-    def msa_missing_domain(self,cwd,clustalopath,alnf=None,profile=None,cores=None):
-        self.coremer, self.coreresids, self.broken, refaln,structaln,self.core_blocks = aln_struct_to_core(self.seqfilename,self.alnfasta,self.residmapfilename,cwd,self.result,clustalopath,
+    def msa_clustal(self,cwd,clustalopath,alnf=None,profile=None,cores=None):
+        self.coremer, self.coreresids, self.broken, refaln,structaln,self.core_blocks = a.aln_struct_to_core(self.seqfilename,self.alnfasta,self.residmapfilename,cwd,self.result,clustalopath,
         profile=profile,alnfile=alnf,cores=cores)
         return refaln, structaln
 
-    def getcore(self,cwd):
-        clean_pdb_dir=cwd/"clean_pdbs"
-        complete=self.coremer
-        resids=self.coreresids
-        broken=self.broken
-        for pdb in complete:
-            if pdb in broken:
-                try:
-                    os.rename(clean_pdb_dir/pdb,clean_pdb_dir/f"broken_{pdb}")
-                    continue
-                except (OSError,IOError):
-                    continue
-            chains=complete[pdb]
-            try:
-                pdblines=coord(open(clean_pdb_dir/pdb,'r').readlines())
-            except (OSError,IOError):
-                logging.warning(f'File does not exist: {pdb} skipped')
-                continue
-            ca=getca_forchains(pdblines,[chains],order=False)
-            newca=None
-            for ch in chains:
-                nter,cter=[int(i) for i in resids[pdb+'|'+ch+'|']]
-                if newca is None:
-                    newca=ca[(ca['ch']==ch)&(ca['resnr']>=nter) & (ca['resnr']<=cter)]
-                else:
-                    newca=np.concatenate([newca,ca[(ca['ch']==ch)&(ca['resnr']>=nter) & (ca['resnr']<=cter)]])
-            writeca(newca,clean_pdb_dir/f'correct_{pdb}')
-            os.remove(clean_pdb_dir/pdb)
-
-    def get_core_mis(self,cwd):
+    def get_core(self,cwd):
         complete = self.coremer
         resids = self.coreresids
         broken = self.broken
