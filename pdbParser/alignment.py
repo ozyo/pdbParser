@@ -259,7 +259,6 @@ def msa_clustal(infile:Path, resmap:Path, outfile:Path, clustalopath:Path, cwd:P
     AlignIO.write(core, (cwd/f"{query}_core.fasta").as_posix(), format="fasta")
     return (completemers, resid, list(set(broken)))
 
-
 def parse_fasta_aln_multi(alnf):
     """
     Parses an alignment file generated with sequences from multiple organisms and the structures.
@@ -358,24 +357,34 @@ def find_resid_onetoone(structaln, resmap, blocks):
     return (resids, list(set(broken)))
 
 
-def aln_struct_to_core(alnf, outf, seqf, resmap, cwd, merinfo, query, totmer, clustalopath, updates=False, cores=None):
-    clustalomega_cline = ClustalOmegaCommandline(
-        infile=cwd + "/" + seqf,
-        profile1=cwd + "/" + alnf,
-        outfile=cwd + "/" + outf,
-        verbose=False,
-        auto=True,
-        force=True,
-    )
-    clustalomega_cline()
-    alndata, _ = parse_fasta_aln_multi(cwd + "/" + outf)
+def aln_struct_to_core(infile:str, outfile:str, resmap, cwd:Path, merinfo, clustalopath, cores=None, profile=None,alnfile=None):
+    if alnfile is None:
+        if profile is None:
+            clustalomega_cline = ClustalOmegaCommandline( cmd=clustalopath,
+                    infile=(cwd/infile).as_posix(), outfile=(cwd/outfile).as_posix(), verbose=False, auto=True, force=True
+                )
+            clustalomega_cline()
+            alndata,_ = parse_fasta_aln_multi((cwd/outfile).as_posix())
+        else:
+            clustalomega_cline = ClustalOmegaCommandline( cmd=clustalopath,
+                infile=(cwd / infile).as_posix(),
+                profile1=(cwd / profile).as_posix(),
+                outfile=(cwd / outfile).as_posix(),
+                verbose=False,
+                auto=True,
+                force=True,
+                )
+            clustalomega_cline()
+            alndata, _ = parse_fasta_aln_multi(cwd / outfile)
+    else:
+        alndata,_=parse_fasta_aln_multi(cwd/alnfile)
     refaln = alndata.filter(regex="refseq_", axis=0)
     structaln = alndata.filter(regex=".pdb", axis=0)
-    if not updates:
+    if cores is None:
         core = find_core(refaln)
     else:
         core = cores
-    resid, broken = find_resid_onetoone(structaln, cwd + "/" + resmap, core)
+    resid, broken = find_resid_onetoone(structaln, cwd / resmap, core)
     completemers = {}
     fullids = list(set([key.split("|")[0] for key in resid.index]))
     for pdb in fullids:

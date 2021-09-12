@@ -5,11 +5,11 @@ from pathlib import Path
 import numpy as np
 import urllib
 
-from pdbParser.clean_pdb import getca_forchains
+from pdbParser.clean_pdb import get_chain_order, getca_forchains
 from pdbParser.parser import parse_ca, pdb_title
 from pdbParser.readpdb import coord, getpdb
 from pdbParser.writepdb import writeca
-from pdbParser.alignment import getseq, msa_clustal, parse_fasta_aln_multi
+from pdbParser.alignment import aln_struct_to_core, getseq, msa_clustal, parse_fasta_aln_multi
 
 class PDBInfo():
     def __init__(self, query, mer, exclude=None):
@@ -24,6 +24,7 @@ class PDBInfo():
         self.coremer = None
         self.coreresids = None
         self.altloc = "A"
+        self.core_blocks = None
         
     def core_show(self, cwd, positions=[]):
         alndata, _ = parse_fasta_aln_multi(cwd/self.alnfasta)
@@ -62,7 +63,7 @@ class PDBInfo():
 
         if len(result1) > 0:
             pdbids,refseq=result1.split(b'\t')
-            refseq=str(refseq)
+            refseq=refseq.decode('utf-8')
             pdbids=['{}'.format(i.decode('utf-8')) for i in pdbids.split(b';') if len(i)>1]
 
             if self.exclude is not None:
@@ -128,7 +129,7 @@ class PDBInfo():
         clean_pdb_dir.mkdir(exist_ok=True)
         outseq=open(cwd/self.seqfilename,'w')
         outresmap=open(cwd/self.residmapfilename,'w')
-        outseq.write(f'>refseq\n{self.refseq}\n')
+        outseq.write(f'>refseq_\n{self.refseq}\n')
         for pdb in self.result.keys():
             pdb_content=open(pdb_dir/f"{pdb}.pdb").readlines()
             for mol in range(0,self.result[pdb][0]):
@@ -150,6 +151,11 @@ class PDBInfo():
     def msa(self,cwd,clustalopath,alnf=None):
         self.coremer,self.coreresids,self.broken=msa_clustal(self.seqfilename,self.residmapfilename,self.alnfasta,clustalopath,cwd,self.result,self.query,alnf)
     
+    def msa_missing_domain(self,cwd,clustalopath,alnf=None,profile=None,cores=None):
+        self.coremer, self.coreresids, self.broken, refaln,structaln,self.core_blocks = aln_struct_to_core(self.seqfilename,self.alnfasta,self.residmapfilename,cwd,self.result,clustalopath,
+        profile=profile,alnfile=alnf,cores=cores)
+        return refaln, structaln
+
     def getcore(self,cwd):
         clean_pdb_dir=cwd/"clean_pdbs"
         complete=self.coremer
@@ -178,3 +184,40 @@ class PDBInfo():
                     newca=np.concatenate([newca,ca[(ca['ch']==ch)&(ca['resnr']>=nter) & (ca['resnr']<=cter)]])
             writeca(newca,clean_pdb_dir/f'correct_{pdb}')
             os.remove(clean_pdb_dir/pdb)
+
+    def get_core_mis(self,cwd):
+        complete = self.coremer
+        resids = self.coreresids
+        broken = self.broken
+        # totmer = info.mer
+        filtresid = np.array([])
+        fulllist = []
+        for _, val in self.core_blocks.items():
+            fulllist = fulllist + val
+        filtresid = resids.iloc[:, fulllist]
+
+        for pdb in complete:
+            if pdb in broken:
+                try:
+                    os.rename(cwd /"clean_pdbs"/pdb, cwd /"clean_pdbs"/f"broken_{pdb}")
+                    continue
+                except (OSError, IOError):
+                    continue
+            chains = complete[pdb]
+            try:
+                pdblines = open((cwd /"clean_pdbs"/ pdb), "r").readlines()
+            except (OSError, IOError):
+                logging.warning("File does not exist: " + pdb + " skipped")
+                continue
+            ca = getca_forchains(coord(pdblines), [chains])
+            # We have to reorder the chains since we loop over them.
+            chains = get_chain_order(ca)
+            newca = None
+            for ch in chains:
+                tmp = filtresid.loc[f"{pdb}|{ch}|"].to_list()
+                if newca is None:
+                    newca = ca[(ca["ch"] == ch) & np.in1d(ca["resnr"], tmp)]
+                else:
+                    newca = np.concatenate([newca, ca[(ca["ch"] == ch) & np.in1d(ca["resnr"], tmp)]])
+            writeca(newca, f"{cwd}/clean_pdbs/correct_{pdb}")
+            os.remove(f"{cwd}/clean_pdbs/{pdb}")
