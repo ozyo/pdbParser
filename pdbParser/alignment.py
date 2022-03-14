@@ -158,14 +158,14 @@ def find_core(refaln):
     return filtblocks
 
 
-def return_gaps(row:pd.DataFrame):
-    return row[row=="-"].dropna(axis=1).columns.to_list()
+def return_gaps(row: pd.DataFrame):
+    return row[row == "-"].dropna(axis=1).columns.to_list()
 
 
-def align_resid_to_seq(resmap,seqaln):
+def align_resid_to_seq(resmap, seqaln):
     resmap = open(resmap, "r").read().split(">")
     resids = seqaln.copy()
-    broken=[]
+    broken = []
     for entry in resmap:
         if len(entry) > 2:
             ids, nr = entry.split("\n")[0:2]
@@ -186,7 +186,7 @@ def align_resid_to_seq(resmap,seqaln):
             else:
                 for ind, i in enumerate(keep):
                     resids[i][ids] = nr[ind]
-    return broken,resids
+    return broken, resids
 
 
 def find_nter_gap(seqaln):
@@ -196,7 +196,8 @@ def find_nter_gap(seqaln):
         if "-" in content:
             pos = col
         else:
-            return pos + 1
+            return pos + 1 if pos is not None else None
+
 
 def find_cter_gap(seqaln):
     pos = None
@@ -205,14 +206,14 @@ def find_cter_gap(seqaln):
         if "-" in content:
             pos = col
         else:
-            return pos - 1
+            return pos - 1 if pos is not None else None
 
 
-def clean_empty_blocks(seqaln,blocks):
-    block_keys=list(blocks.keys()).copy()
+def clean_empty_blocks(seqaln, blocks):
+    block_keys = list(blocks.keys()).copy()
     for block in block_keys:
         filt = seqaln.loc[:, blocks[block]]
-        missing = filt.apply(lambda x:1 if set("".join(x)) == {"-"} else 0,axis=1)
+        missing = filt.apply(lambda x: 1 if set("".join(x)) == {"-"} else 0, axis=1)
         if sum(missing) == len(filt.index):
             logging.info("Block %s is not resolved in any of the structures." % block)
             blocks.pop(block)
@@ -224,16 +225,16 @@ def find_resid_onetoone(seqaln, resmap, blocks):
     This is an easier function to use than the above functions. The previous ones are kept since they are working but
     this is much better and easier to follow. So in the future port everything to pandas.
     """
-    broken, resids = align_resid_to_seq(resmap,seqaln)
-    clean_empty_blocks(seqaln,blocks)
+    broken, resids = align_resid_to_seq(resmap, seqaln)
+    clean_empty_blocks(seqaln, blocks)
     block_keys = list(sorted(blocks.keys()))
     for block in block_keys:
         start = blocks[block][0]
         end = blocks[block][-1]
-        nter = find_nter_gap(seqaln.loc[:,start:end])
-        cter = find_cter_gap(seqaln.loc[:,start:end])
+        nter = find_nter_gap(seqaln.loc[:, start:end])
+        cter = find_cter_gap(seqaln.loc[:, start:end])
         to_remove = []
-        if nter is not None and  blocks[block][0] < nter:
+        if nter is not None and blocks[block][0] < nter:
             start = nter
             for i in blocks[block]:
                 if i < nter:
@@ -242,13 +243,13 @@ def find_resid_onetoone(seqaln, resmap, blocks):
                     break
         if cter is not None and blocks[block][-1] > cter:
             end = cter
-            for i in  blocks[block][::-1]:
+            for i in blocks[block][::-1]:
                 if i > cter:
                     to_remove.append(i)
                 else:
                     break
-        blocks[block]=[i for i in blocks[block] if i not in to_remove]
-        filt = resids.loc[:, range(start,end+1)]
+        blocks[block] = [i for i in blocks[block] if i not in to_remove]
+        filt = resids.loc[:, range(start, end + 1)]
         tmpbroken = []
         for ids in filt.index:
             if ids in broken:
@@ -268,33 +269,42 @@ def find_resid_onetoone(seqaln, resmap, blocks):
     return (resids, list(set(broken)))
 
 
-def aln_struct_to_core(infile:str, outfile:str, resmap, cwd:Path, merinfo, clustalopath, cores=None, profile=None,alnfile=None):
+def aln_struct_to_core(
+    infile: str, outfile: str, resmap, cwd: Path, merinfo, clustalopath, cores=None, profile=None, alnfile=None
+):
     if alnfile is None:
         if profile is None:
-            clustalomega_cline = ClustalOmegaCommandline( cmd=clustalopath,
-                    infile=(cwd/infile).as_posix(), outfile=(cwd/outfile).as_posix(), verbose=False, auto=True, force=True
-                )
+            clustalomega_cline = ClustalOmegaCommandline(
+                cmd=clustalopath,
+                infile=(cwd / infile).as_posix(),
+                outfile=(cwd / outfile).as_posix(),
+                verbose=False,
+                auto=True,
+                force=True,
+            )
             clustalomega_cline()
-            alndata,_ = parse_fasta_aln_multi((cwd/outfile).as_posix())
+            alndata, _ = parse_fasta_aln_multi((cwd / outfile).as_posix())
         else:
-            clustalomega_cline = ClustalOmegaCommandline( cmd=clustalopath,
+            clustalomega_cline = ClustalOmegaCommandline(
+                cmd=clustalopath,
                 infile=(cwd / infile).as_posix(),
                 profile1=(cwd / profile).as_posix(),
                 outfile=(cwd / outfile).as_posix(),
                 verbose=False,
                 auto=True,
                 force=True,
-                )
+            )
             clustalomega_cline()
             alndata, _ = parse_fasta_aln_multi(cwd / outfile)
     else:
-        alndata,_=parse_fasta_aln_multi(cwd/alnfile)
+        alndata, _ = parse_fasta_aln_multi(cwd / alnfile)
     refaln = alndata.filter(regex="refseq_", axis=0)
     structaln = alndata.filter(regex=".pdb", axis=0)
     if cores is None:
         core = find_core(refaln)
     else:
         core = cores
+    print(f"Found blocks: {core}")
     resid, broken = find_resid_onetoone(structaln, cwd / resmap, core)
     completemers = {}
     fullids = list(set([key.split("|")[0] for key in resid.index]))
