@@ -1,6 +1,10 @@
+import os
+from pathlib import Path
 import numpy as np
 from copy import deepcopy
+from pdbParser.clean_pdb import getca_forchains
 from pdbParser.parser import parse_chlist, parse_ca
+from pdbParser.readpdb import coord
 from pdbParser.writepdb import writeca
 
 
@@ -94,7 +98,7 @@ def align_i_to_axes(xyz, axis="axis3", unit=[0, 0, 1], m=12.0107):
     return xyz
 
 
-def direction(ca, chains, ids):
+def direction(ca, chains, ids, cwd:Path):
     """
     Determine direction of subunits
     """
@@ -104,7 +108,7 @@ def direction(ca, chains, ids):
         ca["x"][i] = round(xyz[i][0], 3)
         ca["y"][i] = round(xyz[i][1], 3)
         ca["z"][i] = round(xyz[i][2], 3)
-    writeca(ca, "aln_%s" % ids)
+    writeca(ca, cwd/f"aln_{ids}")
     coms = []
     for ch in chains:
         loc = np.where(ca["ch"] == ch)
@@ -141,13 +145,13 @@ def change_direction(chlist):
     return fixed
 
 
-def direction_check(uni_list, chlist):
+def direction_check(uni_list, chlist,cwd:Path):
     """
     Check and determine which complexes to reorder
     """
     directions = {}
     for ids, uni in uni_list.items():
-        directions[ids] = direction(uni, chlist[ids], ids)
+        directions[ids] = direction(uni, chlist[ids], ids, cwd)
     acs = list(directions.values()).count("ac")
     cs = list(directions.values()).count("c")
     reorder = []
@@ -176,7 +180,7 @@ def sepchains(ca, chlist):
     return sep
 
 
-def reorder(id_ch_dict, cwd, altloc="A", tag=None):
+def reorder(id_ch_dict, cwd, tag=None):
     """
     Reorder the chains
     """
@@ -186,12 +190,12 @@ def reorder(id_ch_dict, cwd, altloc="A", tag=None):
             name = tag + ids
         else:
             name = ids
-        frch = parse_chlist(open(cwd + "/" + name, "r"))
+        frch = parse_chlist(open(cwd / name, "r"))
         frch = [i for i in frch if i in id_ch_dict[ids]]
-        uni_list[ids] = parse_ca(open(cwd + "/" + name, "r"), "NA", frch, altloc)
+        uni_list[ids] = getca_forchains(coord(open(cwd/name).readlines()),frch)
         id_ch_dict[ids] = frch
 
-    neworders = direction_check(uni_list, id_ch_dict)
+    neworders = direction_check(uni_list, id_ch_dict,cwd)
     for ids in uni_list:
         # We could simply loop over neworders improve this part.
         if ids in neworders.keys():
@@ -205,11 +209,14 @@ def reorder(id_ch_dict, cwd, altloc="A", tag=None):
                 tmp["ch"][changelock] = oldch
                 newchains.append(tmp)
             merged = np.concatenate(newchains)
-            writeca(merged, cwd + "/" + "reordered_" + ids)
+            os.rename(cwd/f"aln_{ids}",cwd/f"old_{name}")
+            writeca(merged, cwd / name)
+        else:
+            os.rename(cwd/f"aln_{ids}",cwd/name)
     return list(neworders.keys())
 
 
-def forceorder(id_ch_dict, cwd, mer, alph=True, ordlist=[], forordict={}, altloc="A", tag=None):
+def forceorder(id_ch_dict, cwd, alph=True, ordlist=[], forordict={}, tag=None):
     """
     Force an alphabetical or given order on the chains
     """
@@ -220,29 +227,29 @@ def forceorder(id_ch_dict, cwd, mer, alph=True, ordlist=[], forordict={}, altloc
             else:
                 name = ids
             newstamp = list(sorted(id_ch_dict[ids]))
-            ca = parse_ca(open(cwd + "/" + name, "r"), "NA", mer, altloc, newstamp)
+            ca = getca_forchains(coord(open(cwd/name).readlines()),newstamp,order=False)
             sep_chains = sepchains(ca, newstamp)
             newchains = []
             for ch in newstamp:
                 newchains.append(sep_chains[ch])
             merged = np.concatenate(newchains)
-            writeca(merged, cwd + "/" + "reordered_2_" + ids)
+            os.rename(cwd/name,cwd/f"old_{name}")
+            writeca(merged, cwd / name)
     else:
         for ids, ords in forordict.items():
-            print(ids)
             if tag:
                 name = tag + ids
             else:
                 name = ids
             newstamp = list(sorted(ords))
-            for ind, ch in enumerate(forordict[ids]):
-                newchains = []
-                ca = parse_ca(open(cwd + "/" + name, "r"), id_ch_dict[ids], altloc)
-                sep_chains = sepchains(ca, id_ch_dict[ids])
-                for ind, ch in enumerate(ords):
-                    tmp = deepcopy(sep_chains[ch])
-                    changelock = np.where(tmp["ch"] == ch)
-                    tmp["ch"][changelock] = newstamp[ind]
-                    newchains.append(tmp)
-                merged = np.concatenate(newchains)
-                writeca(merged, cwd + "/" + "reordered_2_" + ids)
+            ca = getca_forchains(coord(open(cwd/name).readlines()),id_ch_dict[ids],order=False)
+            sep_chains = sepchains(ca, id_ch_dict[ids])
+            newchains = []
+            for ind, ch in enumerate(ords):
+                tmp = deepcopy(sep_chains[ch])
+                changelock = np.where(tmp["ch"] == ch)
+                tmp["ch"][changelock] = newstamp[ind]
+                newchains.append(tmp)
+            merged = np.concatenate(newchains)
+            os.rename(cwd/name,cwd/f"old_{name}")
+            writeca(merged, cwd / name)
