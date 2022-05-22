@@ -1,6 +1,6 @@
-# pdbParser for eBDIMS
+# enspdb for eBDIMS
 
-pdbParser cleans the PDB files and extracts the CA coordinates to be used with eBDIMs. Code can be run on local files, or with PDB codes to download files from the RCSB server. 
+enspdb cleans the PDB files and extracts the CA coordinates to be used with eBDIMs. Code can be run on local files, or with PDB codes to download files from the RCSB server. 
 
 eBDIMS server can be accesed at https://ebdims.biophysics.se/
 
@@ -19,11 +19,11 @@ For more information about the eBDIMS method please read the following publicati
 
 To download structures from the RCSB database that has a single chain `A`.
 
-``` pdbParser-cmd --start PDBID --end PDBID --download```
+``` enspdb-cmd --start PDBID --end PDBID --download```
 
 To process multimeric complexes one has to pass the relevant chain ids and how many chains make the complex:
 
-``` pdbParser-cmd --start PDBID --end PDBID --schains A-D --echains F-I --multimeric 2```
+``` enspdb-cmd --start PDBID --end PDBID --schains A-D --echains F-I --multimeric 2```
 
 Above examples informs the code that chains A to D belongs to the starting complex, and A-B and C-D are making up this complex. It is possible that there are multiple biological assemblies in a PDB file. Within these assembles while A-B contains missing residues C-D could be intact. The code will automatically scan through these assemblies until it finds an intact one that can be used.
 Length of chain ids given must be divisible by `multimeric` argument.
@@ -34,7 +34,7 @@ Length of chain ids given must be divisible by `multimeric` argument.
 
 Ensemble mode requires Uniprot IDs to collect information about all the relevant PDB files. This processes is not completely automated and might still require user intervention, thus it is recommended to use this mode from an interpreter and assess the complexes.
 
-``` pdbParser-cmd --prepENS UniProt ID --multimeric Nr.ofChains ```
+``` enspdb-cmd --prepENS UniProt ID --multimeric Nr.ofChains ```
 
 ## OUTPUTS
 
