@@ -8,9 +8,9 @@ license = "GNU GENERAL PUBLIC LICENSE"
 [tool.poetry.dependencies]
 python = "^3.8"
 numpy = "^1.22.4"
-biopython = "^1.79"
-argparse = "^1.4.0"
-requests = "^2.27.1"
+biopython = { git = "https://github.com/ozyo/biopython.git", branch = "change_version" }
+#argparse = "^1.4.0"
+#requests = "^2.27.1"
 pytest = "^7.1.2"
 
 [tool.poetry.dev-dependencies]
