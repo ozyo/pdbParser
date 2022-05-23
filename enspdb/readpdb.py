@@ -60,7 +60,7 @@ def check_moltype(compndlist: List[str]) -> bool:
     return False
 
 
-def extract_relevant_chains(struct: Structure) -> list[str]:
+def extract_relevant_chains(struct: Structure) -> List[str]:
     """
     Extract relevant chains using the compound information from the header.
     After filtering there must be a single MOLID remaining, otherwise an error is raised.
@@ -83,7 +83,7 @@ def extract_relevant_chains(struct: Structure) -> list[str]:
     return list(map(str.upper, list(passing_mol.values())[0]["chain"]))
 
 
-def extract_missing_residues(struct: Structure, chains: list[str]):
+def extract_missing_residues(struct: Structure, chains: List[str]):
     """
     Extracts missing residues.
     """
