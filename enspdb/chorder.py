@@ -2,10 +2,9 @@ import os
 from pathlib import Path
 import numpy as np
 from copy import deepcopy
+
+from Bio.PDB.PDBIO import PDBIO
 from enspdb.clean_pdb import getca_forchains
-from enspdb.parser import parse_chlist, parse_ca
-from enspdb.readpdb import coord
-from enspdb.writepdb import writeca
 
 
 def com(xyz, weight, tweight):
@@ -102,18 +101,20 @@ def direction(ca, chains, ids, cwd:Path):
     """
     Determine direction of subunits
     """
-    xyz = np.array(ca[["x", "y", "z"]].tolist(), dtype="float64")
+    xyz = ca.coord.copy()
     xyz = align_i_to_axes(xyz)
-    for i in range(ca.shape[0]):
-        ca["x"][i] = round(xyz[i][0], 3)
-        ca["y"][i] = round(xyz[i][1], 3)
-        ca["z"][i] = round(xyz[i][2], 3)
-    writeca(ca, cwd/f"aln_{ids}")
+    for ind,atom in enumerate(ca.get_atoms()):
+        atom.coord = np.array([round(xyz[ind][0], 3),round(xyz[ind][1], 3),round(xyz[ind][2], 3)])
+    writer=PDBIO()
+    writer.set_structure(ca)
+    writer.save(cwd/f"aln_{ids}")
+
     coms = []
     for ch in chains:
-        loc = np.where(ca["ch"] == ch)
-        chcom = np.mean(xyz[loc], 0)
-        coms.append(chcom)
+        for s_chain in xyz.get_chains():
+            if s_chain.id == ch:
+                chcom = np.mean(ch.coords, 0)
+                coms.append(chcom)
     edges = []
     for i in range(len(coms)):
         if i == len(coms) - 1:
@@ -123,7 +124,7 @@ def direction(ca, chains, ids, cwd:Path):
         c = coms[i]
         edges.append((nextc[0] - c[0]) * (nextc[1] + c[1]))
     mult = 1
-    if xyz[0][2] > np.mean(xyz, 0)[2]:
+    if xyz.coords[0][2] > np.mean(xyz.coords, 0)[2]:
         mult = -1
     else:
         mult = 1
@@ -176,7 +177,7 @@ def sepchains(ca, chlist):
     """
     sep = {}
     for ch in chlist:
-        sep[ch] = deepcopy(ca[ca["ch"] == ch])
+        sep[ch] = ca[0][0][ch].copy()
     return sep
 
 

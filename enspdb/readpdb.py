@@ -68,7 +68,7 @@ def extract_relevant_chains(struct: Structure) -> List[str]:
     """
     mols = struct.header["compound"]
     passing_mol = dict()
-    last = 0
+
     for mol in range(mols):
         if not check_moltype(mols[str(mol)]["molecule"]):
             passing_mol[str(mol)] = mols[str(mol)]
@@ -104,6 +104,6 @@ def flatten_polypeptide_to_residue(polypep: list) -> list:
 
 def return_proteins_from_file(pdb_path: Path, use_model: int = 0) -> Structure:
     struct = PDBParser().get_structure(pdb_path.stem, pdb_path.as_posix())
-    proteins = PPBuilder().build_peptides(struct[0])
+    proteins = PPBuilder().build_peptides(struct[use_model])
     residues = flatten_polypeptide_to_residue(proteins)
     return unfold_entities(residues, "S")[0]
