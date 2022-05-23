@@ -13,11 +13,11 @@ from Bio.PDB.Selection import unfold_entities
 from Bio.PDB.Polypeptide import PPBuilder
 
 FILTER_MOLTYPES = ["DNA", "RNA", "5'", "3'", "FAB", "ScFv"]
-
+FILTER_TITLES = ["fused", "chimeric", "chimera", "chimaeric"]
 
 def getpdb(
     pdbid: Path, download: bool = False, clean: bool = False, cwd: Path = Path(getcwd())
-) -> List[str]:
+) -> Structure:
     """
     Download or read in PDB files.
     """
@@ -29,19 +29,17 @@ def getpdb(
             urllib.request.urlretrieve(
                 f"http://files.rcsb.org/download/{pdbid}", f"{cwd}/{pdbid}"
             )
-            pdblines = open(f"{pdbid}", "r").readlines()
+            pdb_data = return_proteins_from_file(pdbid)
             if clean:
                 (cwd / pdbid).unlink()
-            return pdblines
+            return pdb_data
         except urllib.error.HTTPError as err:
             logging.error("FAIL", exc_info=err)
             raise ParserError
     else:
         if (cwd / pdbid).is_file():
             logging.info(f"Opening file {pdbid}")
-            with open(cwd / pdbid, "r") as pdbfile:
-                pdblines = pdbfile.readlines()
-            return pdblines
+            return return_proteins_from_file(cwd / pdbid)
         else:
             try:
                 raise FileNotFoundError(f"{pdbid} not found in {cwd.absolute()}")
@@ -107,3 +105,12 @@ def return_proteins_from_file(pdb_path: Path, use_model: int = 0) -> Structure:
     proteins = PPBuilder().build_peptides(struct[use_model])
     residues = flatten_polypeptide_to_residue(proteins)
     return unfold_entities(residues, "S")[0]
+
+def check_pdb_title(title:str)->bool:
+    """
+    Check if PDB title indicates that this structure is a chimera.
+    """
+    if any(True for x in FILTER_TITLES if x in title.lower()):
+        return True
+    else:
+        return False

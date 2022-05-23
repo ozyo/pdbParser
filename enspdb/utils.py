@@ -36,6 +36,17 @@ class NotDisordered(Select):
         return False
 
 
+class SelectResidues(Select):
+    def __init__(self, chain, res_ids):
+        self.chain = chain
+        self.res_ids = res_ids
+
+    def accept_residue(self, residue):
+        return all(
+            [residue.parent.id == self.chain, residue.full_id()[1] in self.res_ids]
+        )
+
+
 def get_selected(struct: Structure, selection: Select) -> Structure:
     selected = []
 

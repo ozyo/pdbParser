@@ -1,4 +1,5 @@
 # See LICENSE for license
+from ctypes import Structure
 from pathlib import Path
 from Bio import pairwise2
 from Bio.Align import substitution_matrices
@@ -15,12 +16,18 @@ import logging
 matrix = substitution_matrices.load("BLOSUM62")
 
 
-def getseq(ca):
+def getseq(struct: Structure):
     """
     Extract sequence from
     """
-    seq = letter("".join(ca["resname"].tolist()))
-    resmap = list(zip(list(seq), ca["resname"].tolist(), ca["resnr"].tolist()))
+    seq = letter("".join([res.id for res in struct.get_residues()]))
+    resmap = list(
+        zip(
+            list(seq),
+            [res.id for res in struct.get_residues()],
+            [res.full_id[1] for res in struct.get_residues()],
+        )
+    )
     return seq, resmap
 
 
@@ -37,7 +44,9 @@ def align(seq1, seq2):
         )
         return alignments
     elif isinstance(seq1, list):
-        alignments = pairwise2.align.globalds(seq1, seq2, matrix, -11, -11, gap_char=["-"], penalize_end_gaps=True)
+        alignments = pairwise2.align.globalds(
+            seq1, seq2, matrix, -11, -11, gap_char=["-"], penalize_end_gaps=True
+        )
         return alignments
 
 
@@ -82,7 +91,9 @@ def getaligned(ca1, ca2):
         nter2 = mapca2[shift1[0] : shift1[1]][0]
         cter2 = mapca2[shift1[0] : shift1[1]][-1]
     except IndexError:
-        logging.error("Sequences contain large shifts. Please check the sequence alignment.")
+        logging.error(
+            "Sequences contain large shifts. Please check the sequence alignment."
+        )
         logging.error(
             "This usually happens when two unrelated proteins are given as start and target and the target structure is shorter than the start."
         )
@@ -105,7 +116,10 @@ def multialigned(ca1, ca2, mer):
     whole1 = None
     whole2 = None
     correct = []
-    if len(np.unique(ca1["ch"])) == len(np.unique(ca2["ch"])) and len(np.unique(ca1["ch"])) == mer:
+    if (
+        len(np.unique(ca1["ch"])) == len(np.unique(ca2["ch"]))
+        and len(np.unique(ca1["ch"])) == mer
+    ):
         for a, b in zip(np.unique(ca1["ch"]), np.unique(ca2["ch"])):
             cores = getaligned(ca1[ca1["ch"] == a], ca2[ca2["ch"] == b])
             if whole1 is None:
@@ -144,7 +158,9 @@ def parse_fasta_aln_multi(alnf):
 def find_core(refaln):
     # https://stackoverflow.com/questions/2361945/detecting-consecutive-integers-in-a-list
     # https://stackoverflow.com/questions/56704700/select-columns-if-any-of-their-rows-contain-a-certain-string/56704768
-    missing = refaln.columns[refaln.select_dtypes(object).applymap(lambda x: "-" in str(x)).any()].tolist()
+    missing = refaln.columns[
+        refaln.select_dtypes(object).applymap(lambda x: "-" in str(x)).any()
+    ].tolist()
     keep = refaln.drop(missing, axis=1)
     blocks = []
     for _, g in groupby(enumerate(keep.columns), lambda ix: ix[0] - ix[1]):
@@ -179,7 +195,10 @@ def align_resid_to_seq(resmap, seqaln):
                 .columns
             )
             if len(nr) != len(keep):
-                logging.warning("%s has incosistent sequence and residue numbering. Marked as broken." % ids)
+                logging.warning(
+                    "%s has incosistent sequence and residue numbering. Marked as broken."
+                    % ids
+                )
                 resids = resids.drop(ids, axis=0)
                 broken.append(ids.split("|")[0])
                 continue
@@ -256,21 +275,38 @@ def find_resid_onetoone(seqaln, resmap, blocks):
                 continue
             else:
                 gaps = return_gaps(filt.loc[[ids]])
-                if len(gaps) == len(filt.columns) or len(gaps) >= len(filt.columns) / 2.0:
+                if (
+                    len(gaps) == len(filt.columns)
+                    or len(gaps) >= len(filt.columns) / 2.0
+                ):
                     tmpbroken.append(ids)
                 else:
                     if len(gaps) > 0:
-                        logging.warning("%s has missing residues in block %s, marked as broken." % (ids, block))
+                        logging.warning(
+                            "%s has missing residues in block %s, marked as broken."
+                            % (ids, block)
+                        )
                         broken.append(ids.split("|")[0])
         if len(tmpbroken) > 0:
             for tmp in tmpbroken:
-                logging.warning("%s has missing residues in block %s, marked as broken" % (tmp, block))
+                logging.warning(
+                    "%s has missing residues in block %s, marked as broken"
+                    % (tmp, block)
+                )
                 broken.append(tmp.split("|")[0])
     return (resids, list(set(broken)))
 
 
 def aln_struct_to_core(
-    infile: str, outfile: str, resmap, cwd: Path, merinfo, clustalopath, cores=None, profile=None, alnfile=None
+    infile: str,
+    outfile: str,
+    resmap,
+    cwd: Path,
+    merinfo,
+    clustalopath,
+    cores=None,
+    profile=None,
+    alnfile=None,
 ):
     if alnfile is None:
         if profile is None:
