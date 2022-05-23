@@ -1,6 +1,7 @@
+from pathlib import Path
 from Bio.PDB.Structure import Structure
 from Bio.PDB.Selection import unfold_entities
-from Bio.PDB.PDBIO import Select
+from Bio.PDB.PDBIO import Select, PDBIO
 
 
 class ParserError(Exception):
@@ -51,3 +52,8 @@ def get_selected(struct: Structure, selection: Select) -> Structure:
             selected.append(atom)
 
     return unfold_entities(selected, "S")[0]
+
+def write_pdb(struct:Structure,outname:Path):
+    writer=PDBIO()
+    writer.set_structure(struct)
+    writer.save(outname.as_posix())
