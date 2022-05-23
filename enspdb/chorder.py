@@ -1,10 +1,13 @@
+from csv import writer
 import os
 from pathlib import Path
 import numpy as np
 from copy import deepcopy
 
 from Bio.PDB.PDBIO import PDBIO
+from Bio.PDB.Selection import unfold_entities
 from enspdb.clean_pdb import getca_forchains
+from enspdb.readpdb import return_proteins_from_file
 
 
 def com(xyz, weight, tweight):
@@ -111,7 +114,7 @@ def direction(ca, chains, ids, cwd:Path):
 
     coms = []
     for ch in chains:
-        for s_chain in xyz.get_chains():
+        for s_chain in ca.get_chains():
             if s_chain.id == ch:
                 chcom = np.mean(ch.coords, 0)
                 coms.append(chcom)
@@ -124,7 +127,7 @@ def direction(ca, chains, ids, cwd:Path):
         c = coms[i]
         edges.append((nextc[0] - c[0]) * (nextc[1] + c[1]))
     mult = 1
-    if xyz.coords[0][2] > np.mean(xyz.coords, 0)[2]:
+    if ca.coords[0][2] > np.mean(ca.coords, 0)[2]:
         mult = -1
     else:
         mult = 1
@@ -171,16 +174,6 @@ def direction_check(uni_list, chlist,cwd:Path):
     return neworders
 
 
-def sepchains(ca, chlist):
-    """
-    Obtain coordinates of individual chains
-    """
-    sep = {}
-    for ch in chlist:
-        sep[ch] = ca[0][0][ch].copy()
-    return sep
-
-
 def reorder(id_ch_dict, cwd, tag=None):
     """
     Reorder the chains
@@ -191,9 +184,10 @@ def reorder(id_ch_dict, cwd, tag=None):
             name = tag + ids
         else:
             name = ids
-        frch = parse_chlist(open(cwd / name, "r"))
+        struct = return_proteins_from_file(cwd/name)
+        frch = [ch.id for ch in struct.get_chains()]
         frch = [i for i in frch if i in id_ch_dict[ids]]
-        uni_list[ids] = getca_forchains(coord(open(cwd/name).readlines()),frch)
+        uni_list[ids] = getca_forchains(struct,frch)
         id_ch_dict[ids] = frch
 
     neworders = direction_check(uni_list, id_ch_dict,cwd)
@@ -201,17 +195,18 @@ def reorder(id_ch_dict, cwd, tag=None):
         # We could simply loop over neworders improve this part.
         if ids in neworders.keys():
             newchains = []
-            sep_chains = sepchains(uni_list[ids], id_ch_dict[ids])
+            sep_chains = {ch:uni_list[ids][0][0][ch].copy() for ch in id_ch_dict[ids]}
             oldchs = id_ch_dict[ids]
             for ind, ch in enumerate(neworders[ids]):
                 oldch = oldchs[ind]
-                tmp = deepcopy(sep_chains[ch])
-                changelock = np.where(tmp["ch"] == ch)
-                tmp["ch"][changelock] = oldch
+                tmp = sep_chains[ch].copy()
+                tmp.id = oldch
                 newchains.append(tmp)
-            merged = np.concatenate(newchains)
+            merged = unfold_entities(newchains,"S")[0]
+            writer = PDBIO()
+            writer.set_structure(merged)
+            writer.save(cwd / name)
             os.rename(cwd/f"aln_{ids}",cwd/f"old_{name}")
-            writeca(merged, cwd / name)
         else:
             os.rename(cwd/f"aln_{ids}",cwd/name)
     return list(neworders.keys())
@@ -228,14 +223,16 @@ def forceorder(id_ch_dict, cwd, alph=True, ordlist=[], forordict={}, tag=None):
             else:
                 name = ids
             newstamp = list(sorted(id_ch_dict[ids]))
-            ca = getca_forchains(coord(open(cwd/name).readlines()),newstamp,order=False)
-            sep_chains = sepchains(ca, newstamp)
+            ca = getca_forchains(return_proteins_from_file(cwd/name),newstamp,order=False)
+            sep_chains = {ch.id:ch.copy() for ch in ca.get_chains()}
             newchains = []
             for ch in newstamp:
                 newchains.append(sep_chains[ch])
-            merged = np.concatenate(newchains)
+            merged = unfold_entities(newchains,"S")[0]
             os.rename(cwd/name,cwd/f"old_{name}")
-            writeca(merged, cwd / name)
+            writer=PDBIO()
+            writer.set_structure(merged)
+            writer.save(cwd / name)
     else:
         for ids, ords in forordict.items():
             if tag:
@@ -243,14 +240,15 @@ def forceorder(id_ch_dict, cwd, alph=True, ordlist=[], forordict={}, tag=None):
             else:
                 name = ids
             newstamp = list(sorted(ords))
-            ca = getca_forchains(coord(open(cwd/name).readlines()),id_ch_dict[ids],order=False)
-            sep_chains = sepchains(ca, id_ch_dict[ids])
+            ca = getca_forchains(return_proteins_from_file(cwd/name),id_ch_dict[ids],order=False)
+            sep_chains = {ch.id:ch.copy() for ch in ca.get_chains() if ch.id in id_ch_dict[ids]}
             newchains = []
             for ind, ch in enumerate(ords):
-                tmp = deepcopy(sep_chains[ch])
-                changelock = np.where(tmp["ch"] == ch)
-                tmp["ch"][changelock] = newstamp[ind]
+                tmp = sep_chains[ch].copy()
+                tmp.id = newstamp[ind]
                 newchains.append(tmp)
-            merged = np.concatenate(newchains)
+            merged = unfold_entities(newchains,"S")[0]
             os.rename(cwd/name,cwd/f"old_{name}")
-            writeca(merged, cwd / name)
+            writer=PDBIO()
+            writer.set_structure(merged)
+            writer.save(cwd / name)
