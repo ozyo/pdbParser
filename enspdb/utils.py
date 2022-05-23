@@ -53,7 +53,8 @@ def get_selected(struct: Structure, selection: Select) -> Structure:
 
     return unfold_entities(selected, "S")[0]
 
-def write_pdb(struct:Structure,outname:Path):
-    writer=PDBIO()
+
+def write_pdb(struct: Structure, outname: Path):
+    writer = PDBIO()
     writer.set_structure(struct)
     writer.save(outname.as_posix())

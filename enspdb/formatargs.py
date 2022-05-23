@@ -27,29 +27,3 @@ def format_ch(ch_arg):
                 raise ParserError
 
     return chlist
-
-
-def split_mer(mer, chlist):
-    """
-    Split chain ids into mers.
-    """
-    if mer == len(chlist):
-        return [chlist]
-    elif len(chlist) > mer or mer == 1:
-        if len(chlist) % mer == 0:
-            moldivision = []
-            for i in range(0, len(chlist), mer):
-                moldivision.append(chlist[i : i + mer])
-            return moldivision
-        else:
-            try:
-                raise ValueError("Chain labels are not equal or multiple of total number of chains given.")
-            except ValueError as err:
-                logging.exception("FAIL", exc_info=err)
-                raise ParserError
-    else:
-        try:
-            raise ValueError(f"List of chain ids: {chlist} cannot be split to {mer}.")
-        except ValueError as err:
-            logging.exception("FAIL", exc_info=err)
-            raise ParserError
