@@ -1,8 +1,8 @@
 from pathlib import Path
 from Bio.PDB.Structure import Structure
+from Bio.PDB.Atom import Atom
 from Bio.PDB.Selection import unfold_entities
 from Bio.PDB.PDBIO import Select, PDBIO
-
 
 class ParserError(Exception):
     """
@@ -24,17 +24,24 @@ class CAlphaSelect(Select):
     def accept_atom(self, atom):
         return atom.id == "CA"
 
-
-class NotDisordered(Select):
+class CleanDisorderedChilds(Select):
     def __init__(self, keep_altloc):
         self.altloc = keep_altloc
 
     def accept_atom(self, atom):
-        if not atom.is_disordered() or atom.get_altloc() == self.altloc:
-            atom.set_altloc(" ")
-            return True
-        return False
-
+        if atom.disordered_flag == 1:
+            for child_id in atom.disordered_get_id_list():
+                if child_id == self.altloc:
+                    atom.disordered_flag = 0
+                    # Not that set_altloc has unwanted consequences
+                    # It will create a mismatch between DisorderedAtom.disordered_get_id_list()
+                    # and the actual ID of the childs.
+                    # TODO: Create a bug report if this is not fixed in the latest BioPython release 1.80 or higher
+                    atom.set_altloc("")
+                    return True
+                else:
+                    return False
+        return True
 
 class SelectResidues(Select):
     def __init__(self, chain, res_ids):

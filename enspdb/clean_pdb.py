@@ -2,7 +2,7 @@
 
 from Bio.PDB.Structure import Structure
 from Bio.PDB.Selection import unfold_entities
-from enspdb.utils import CAlphaSelect, ChainSelect, NotDisordered, get_selected
+from enspdb.utils import CAlphaSelect, ChainSelect, CleanDisorderedChilds, get_selected
 
 
 def check_chains_exists(struct: Structure, chains: list[str]):
@@ -40,7 +40,7 @@ def clean_altloc(struct: Structure, altloc: str) -> Structure:
     """
     Filter altloc lines and clean altloc character.
     """
-    return unfold_entities(get_selected(struct, NotDisordered(altloc)), "S")[0]
+    return unfold_entities(get_selected(struct, CleanDisorderedChilds(altloc)), "S")[0]
 
 
 def clean_icode(struct: Structure) -> None:
