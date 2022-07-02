@@ -1,9 +1,9 @@
 import itertools
 from typing import Union
-from biopython.Bio.PDB.Structure import Structure
-from biopython.Bio.PDB.Model import Model
-from biopython.Bio.PDB.Chain import Chain
-from biopython.Bio.PDB.Residue import Residue
+from Bio.PDB.Structure import Structure
+from Bio.PDB.Model import Model
+from Bio.PDB.Chain import Chain
+from Bio.PDB.Residue import Residue
 
 def change_residue_number(res:Residue,res_nr:int):
     """
