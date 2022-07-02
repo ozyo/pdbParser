@@ -3,7 +3,7 @@
 from Bio.PDB.Structure import Structure
 from Bio.PDB.Selection import unfold_entities
 from enspdb.utils import CAlphaSelect, ChainSelect, CleanDisorderedChilds, get_selected
-
+from enspdb.modifypdb import change_icode
 
 def check_chains_exists(struct: Structure, chains: list[str]):
     for chain in struct.get_chains():
@@ -45,8 +45,8 @@ def clean_altloc(struct: Structure, altloc: str) -> Structure:
 
 def clean_icode(struct: Structure) -> None:
     """
-    Clean icode character.
+    Clean icode character. If this function is called before renumbering it might raise
+    an error due to overlapping residue numbers
     """
-    for atom in struct.get_atoms():
-        # TODO: Implement support for cleaning icode in BioPython
-        pass
+    for res in struct.get_residues():
+        change_icode(res,"")

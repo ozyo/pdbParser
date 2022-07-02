@@ -9,7 +9,14 @@ def change_residue_number(res:Residue,res_nr:int):
     """
     Change residue number
     """
-    hetero,cur_res_nr,icode= res.id
+    hetero,_,icode= res.id
+    res.id=(hetero,res_nr,icode)
+
+def change_icode(res:Residue,icode:str):
+    """
+    Change icode character
+    """
+    hetero,res_nr,_= res.id
     res.id=(hetero,res_nr,icode)
 
 def renumber_polychains(pdb:Union[Structure,Model,Chain]):
