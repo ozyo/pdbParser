@@ -1,21 +1,31 @@
+import imp
 import logging
 import os
 from pathlib import Path
-from enspdb.alignment import aln_struct_to_core, getseq, parse_fasta_aln_multi
-from enspdb.utils import SelectResidues, get_selected, write_pdb
+from urllib import request
 
 import numpy as np
-import urllib
 
-from Bio.PDB.Structure import Structure
 from Bio.PDB.Selection import unfold_entities
 
-from enspdb.readpdb import check_pdb_title, getpdb
+from enspdb.alignment import aln_struct_to_core, getseq, parse_fasta_aln_multi
+from enspdb import alignment as a
+from enspdb.utils import SelectResidues, fold_entities, get_selected, write_pdb
+from enspdb import utils as u
+from importlib import reload
+reload(u)
+reload(a)
+from enspdb.readpdb import check_pdb_title, getpdb, load_structure
 from enspdb.clean_pdb import clean_altloc, getca_forchains
+from enspdb import clean_pdb as c
+reload(c)
+from enspdb.uniprot_pdb_info import get_pdb_chainid_table, parse_refseq, parse_uniprot_query  
 
 
 class PDBInfo:
-    def __init__(self, query, mer, exclude=None):
+    def __init__(self, query, mer, workdir , exclude=None):
+        self.cwd = Path(workdir)
+        self.cwd.mkdir(exist_ok=True)
         self.exclude = exclude
         self.query = [query] if isinstance(query, str) else query
         self.mer = mer
@@ -34,59 +44,13 @@ class PDBInfo:
         refseqs = {}
         returninfo = {}
         for query in self.query:
-            URLbase = "http://www.uniprot.org/uniprot/"
+            refseq=parse_refseq(query)
+            refseqs[query]=refseq
+            query_result=parse_uniprot_query(query)
+            pdbids=get_pdb_chainid_table(query_result)
 
-            idparam = {
-                "query": "ID:{}".format(query),
-                "format": "tab",
-                "columns": "database(PDB),sequence",
-            }
-            idparam = urllib.parse.urlencode(idparam)
-            result1 = urllib.request.Request(URLbase + "?" + idparam)
-            try:
-                result1 = urllib.request.urlopen(result1).readlines()[1]
-            except:
-                logging.warning(
-                    "Cannot retrive the information for query number %s" % (query)
-                )
-                continue
-
-            if len(result1) > 0:
-                pdbids, refseq = result1.split(b"\t")
-                refseqs[query] = refseq.decode("utf-8")
-                pdbids = [
-                    "{}".format(i.decode("utf-8"))
-                    for i in pdbids.split(b";")
-                    if len(i) > 1
-                ]
-
-                if self.exclude is not None:
-                    try:
-                        for ex in self.exclude:
-                            pdbids.remove(ex)
-                    except ValueError:
-                        pass
-
-                chainids = {}
-                for i in urllib.request.urlopen(URLbase + query + ".txt").readlines():
-                    if i.startswith(b"DR   PDB;") and i.split(b";")[3] not in [
-                        "NMR;",
-                        "model;",
-                    ]:
-                        chainids[i.split(b";")[1].strip().decode("utf-8")] = (
-                            i.split(b";")[4].split(b"=")[0].strip().decode("utf-8")
-                        )
-            tmpids = pdbids.copy()
-            for pdb in tmpids:
+            for pdb,chains in pdbids.items():
                 count = 0
-                try:
-                    chains = chainids[pdb]
-                except KeyError:
-                    logging.warning(
-                        "PDB ID %s is either an NMR structure or a model. Skipping"
-                        % pdb
-                    )
-                    continue
                 if "/" in chains:
                     chains = chains.split("/")
                 if len(chains) == self.mer:
@@ -111,15 +75,14 @@ class PDBInfo:
         if len(returninfo) == 0:
             return ({}, {})
         return (returninfo, refseqs)
-
-    def downloadPDB(self, cwd: Path) -> None:
+    @staticmethod
+    def downloadPDB(info_class, cwd: Path) -> None:
         pdb_dir = cwd / "rcsb"
         pdb_dir.mkdir(exist_ok=True)
         delete = []
-        for pdb in self.result.keys():
+        for pdb in info_class.result.keys():
             if not (pdb_dir / f"{pdb}.pdb").is_file():
                 pdb_content = getpdb(Path(pdb), True, cwd=pdb_dir)
-                write_pdb(pdb_content, pdb_dir / f"{pdb}.pdb")
             else:
                 pdb_content = getpdb(pdb_dir / f"{pdb}.pdb")
             if check_pdb_title(pdb_content.header["name"]) is True:
@@ -129,68 +92,68 @@ class PDBInfo:
                     % pdb
                 )
                 continue
-        [self.result.pop(key) for key in delete]
+        [info_class.result.pop(key) for key in delete]
 
-    def process_pdbs(self, cwd: Path, overwrite_pdb: bool = False):
+    @staticmethod
+    def process_pdbs(info_class, cwd: Path, overwrite_pdb: bool = False):
         pdb_dir = cwd / "rcsb"
         clean_pdb_dir = cwd / "clean_pdbs"
         clean_pdb_dir.mkdir(exist_ok=True)
-        outseq = open(cwd / self.seqfilename, "w")
-        outresmap = open(cwd / self.residmapfilename, "w")
-        for query, seq in self.refseqs.items():
+        outseq = open(cwd / info_class.seqfilename, "w")
+        outresmap = open(cwd / info_class.residmapfilename, "w")
+        for query, seq in info_class.refseqs.items():
             outseq.write(f">refseq_{query}\n{seq}\n")
-        for pdb in self.result.keys():
-            pdb_content = getpdb(pdb_dir / f"{pdb}.pdb")
-            for mol in range(0, self.result[pdb][0]):
+        for pdb in info_class.result.keys():
+            pdb_content = load_structure(pdb_dir / f"{pdb}.pdb")
+            for mol in range(0, info_class.result[pdb][0]):
                 if (
                     overwrite_pdb
                     or not (clean_pdb_dir / f"{pdb}_{mol+1}.pdb").is_file()
                 ):
-                    ca = getca_forchains(pdb_content, [self.result[pdb][1][mol]])
-                    ca = clean_altloc(ca, self.altloc)
+                    ca = getca_forchains(pdb_content, info_class.result[pdb][1][mol])
+                    ca = c.clean_altloc(ca, info_class.altloc)
                     write_pdb(ca, clean_pdb_dir / f"{pdb}_{mol+1}.pdb")
                 else:
-                    ca = getpdb(clean_pdb_dir / f"{pdb}_{mol+1}.pdb")
-                for ch in self.result[pdb][1][mol]:
+                    ca = load_structure(clean_pdb_dir / f"{pdb}_{mol+1}.pdb")
+                for ch in info_class.result[pdb][1][mol]:
                     ca_ch = getca_forchains(ca, [ch])
-                    seq, mapx = getseq(ca_ch)
+                    seq, nr = a.getseq(ca_ch)
                     outseq.write(f">{pdb}_{mol+1}.pdb|{ch}|\n{seq}\n")
-                    _, _, nr = zip(*mapx)
                     outresmap.write(
                         f">{pdb}_{mol+1}.pdb|{ch}|\n{'-'.join([str(i) for i in nr])}\n"
                     )
         outseq.close()
         outresmap.close()
-
-    def msa_clustal(self, cwd, clustalopath, alnf=None, profile=None, cores=None):
+    @staticmethod
+    def msa_clustal(info_class, cwd, clustalopath, alnf=None, profile=None, cores=None):
         (
-            self.coremer,
-            self.coreresids,
-            self.broken,
+            info_class.coremer,
+            info_class.coreresids,
+            info_class.broken,
             refaln,
             structaln,
-            self.core_blocks,
-        ) = aln_struct_to_core(
-            self.seqfilename,
-            self.alnfasta,
-            self.residmapfilename,
+            info_class.core_blocks,
+        ) = a.aln_struct_to_core(
+            info_class.seqfilename,
+            info_class.alnfasta,
+            info_class.residmapfilename,
             cwd,
-            self.result,
+            info_class.result,
             clustalopath,
             profile=profile,
             alnfile=alnf,
             cores=cores,
         )
         return refaln, structaln
-
-    def get_core(self, cwd):
-        complete = self.coremer
-        resids = self.coreresids
-        broken = self.broken
+    @staticmethod
+    def get_core(info_class,cwd):
+        complete = info_class.coremer
+        resids = info_class.coreresids
+        broken = info_class.broken
         # totmer = info.mer
         filtresid = np.array([])
         fulllist = []
-        for _, val in self.core_blocks.items():
+        for _, val in info_class.core_blocks.items():
             fulllist = fulllist + val
         filtresid = resids.iloc[:, fulllist]
 
@@ -205,22 +168,18 @@ class PDBInfo:
                     continue
             chains = complete[pdb]
             try:
-                pdblines = getpdb(cwd / "clean_pdbs" / pdb)
+                ca = load_structure(cwd / "clean_pdbs" / pdb)
             except (OSError, IOError):
                 logging.warning("File does not exist: " + pdb + " skipped")
                 continue
-            ca = getca_forchains(pdblines, [chains])
+            # ca = getca_forchains(pdblines, [chains]), We are already writing an ensemble
+            # No need to reread it
             # We have to reorder the chains since we loop over them.
-            chains = [ch.id for ch in ca.get_chains()]
-            newca = []
-            for ch in chains:
-                tmp = filtresid.loc[f"{pdb}|{ch}|"].to_list()
-                newca.extend(
-                    list(get_selected(ca, SelectResidues(ch, tmp)).get_residues())
-                )
-            newca = unfold_entities(newca, "S")[0]
+            chains_resids = {ch.id:list(map(int,filtresid.loc[f"{pdb}|{ch.id}|"])) for ch in ca.get_chains()}
+            newca=u.get_selected(ca, u.SelectResidues(chains_resids))
+            newca = fold_entities(newca, "S")[0]
             write_pdb(newca, cwd / "clean_pdbs" / f"correct_{pdb}")
-            os.remove(f"{cwd}/clean_pdbs/{pdb}")
+            #os.remove(f"{cwd}/clean_pdbs/{pdb}")
 
     def core_show(self, cwd, positions=[]):
         alndata, _ = parse_fasta_aln_multi(cwd / self.alnfasta)

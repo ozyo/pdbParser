@@ -1,8 +1,8 @@
 # See LICENSE for license
-from ctypes import Structure
 from pathlib import Path
 from Bio import pairwise2
 from Bio.Align import substitution_matrices
+from Bio.PDB.Structure import Structure
 from Bio.SeqUtils import seq1 as letter
 from Bio.Align.Applications import ClustalOmegaCommandline
 import numpy as np
@@ -18,16 +18,10 @@ matrix = substitution_matrices.load("BLOSUM62")
 
 def getseq(struct: Structure):
     """
-    Extract sequence from
+    Extract sequence and residue numbers from a PDB file
     """
-    seq = letter("".join([res.id for res in struct.get_residues()]))
-    resmap = list(
-        zip(
-            list(seq),
-            [res.id for res in struct.get_residues()],
-            [res.full_id[1] for res in struct.get_residues()],
-        )
-    )
+    seq = letter("".join([res.resname for res in struct.get_residues()]))
+    resmap = [res.id[1] for res in struct.get_residues()]
     return seq, resmap
 
 

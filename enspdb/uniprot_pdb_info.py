@@ -1,25 +1,18 @@
 import logging
 from enspdb.utils import ParserError
-import requests
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+from Bio import SeqIO
 
 URLBASE = "http://www.uniprot.org/uniprot/"
 
 
-def get_chainids(query):
-    chainids = {
-        z.split(";")[1].strip(): z.split(";")[4].split("=")[0].strip()
-        for z in [
-            i
-            for i in urllib.request.urlopen(URLBASE + query + ".txt")
-            .read()
-            .decode("utf-8")
-            .splitlines()
-            if i.startswith("DR   PDB;")
-        ]
-        if z.split()[3] not in ["NMR;", "model;"]
-    }
-    return chainids
+def get_pdb_chainid_table(query_result):
+    pdb_chainid={}
+    for line in query_result:
+        line=line.decode("utf-8")
+        if line.startswith("DR   PDB;"):
+            pdb_chainid[line.split(";")[1].strip()]=line.split(";")[4].split("=")[0].strip()
+    return pdb_chainid
 
 
 def filter_ids(pdbids, exclude):
@@ -69,27 +62,16 @@ def mer_info(pdbids, chainids, mer):
     return returninfo
 
 
-def get_pdbinfo(query, exclude, mer):
+def parse_uniprot_query(query):
 
-    idparam = {
-        "query": "ID:{}".format(query),
-        "format": "tab",
-        "columns": "database(PDB),sequence",
-    }
+    URL = f"https://rest.uniprot.org/uniprotkb/{query}.txt"
+    result = urllib.request.urlopen(URL).readlines()
+    return result
 
-    result1 = requests.get(URLBASE, params=idparam).text
-    if len(result1) > 0:
-        pdbids, refseq = result1.split("\n")[1].split("\t")
-        refseq = str(refseq)
-        pdbids = ["{}".format(i) for i in pdbids.split(";") if len(i) > 1]
-        pdbids = filter_ids(pdbids, exclude)
-        chainids = get_chainids(query)
-        returninfo = mer_info(pdbids, chainids, mer)
-        return refseq, returninfo
-    else:
-        logging.critical("Cannot retrive the information for query number %s" % (query))
-        return (None, None)
-
+def parse_refseq(query):
+    URL = f"https://rest.uniprot.org/uniprotkb/{query}.fasta"
+    result = SeqIO.read(urllib.request.urlretrieve(URL)[0],'fasta')
+    return str(result.seq)
 
 def get_query_info(querylist, exclude, mer):
     refseqs = {}

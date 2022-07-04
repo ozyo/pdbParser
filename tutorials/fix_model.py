@@ -12,7 +12,7 @@ env = Environ()
 env.io.atom_files_directory = ['.', '../atom_files']
 a = MyLoop(env,
            alnfile  = 'seg.ali',      # alignment filename
-           knowns   = '4NPQ_4',               # codes of the templates
+           knowns   = 'broken_4NPQ_4',               # codes of the templates
            sequence = '4NPQ',               # code of the target
            loop_assess_methods=assess.DOPE) # assess each loop with DOPE
 

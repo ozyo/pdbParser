@@ -1,13 +1,13 @@
 import os
 from pathlib import Path
-from enspdb.utils import write_pdb
+from enspdb.utils import fold_entities, write_pdb
 import numpy as np
 from copy import deepcopy
 
 from Bio.PDB.PDBIO import PDBIO
 from Bio.PDB.Selection import unfold_entities
 from enspdb.clean_pdb import getca_forchains
-from enspdb.readpdb import return_proteins_from_file
+from enspdb.readpdb import load_structure, return_proteins_from_file
 
 
 def com(xyz, weight, tweight):
@@ -110,7 +110,7 @@ def direction(ca, chains, ids, cwd: Path):
     """
     Determine direction of subunits
     """
-    xyz = ca.coord.copy()
+    xyz = np.array(atom.coord for atom in ca.get_atoms())
     xyz = align_i_to_axes(xyz)
     for ind, atom in enumerate(ca.get_atoms()):
         atom.coord = np.array(
@@ -190,7 +190,7 @@ def reorder(id_ch_dict, cwd, tag=None):
             name = tag + ids
         else:
             name = ids
-        struct = return_proteins_from_file(cwd / name)
+        struct = load_structure(cwd / name)
         frch = [ch.id for ch in struct.get_chains()]
         frch = [i for i in frch if i in id_ch_dict[ids]]
         uni_list[ids] = getca_forchains(struct, frch)
@@ -208,7 +208,7 @@ def reorder(id_ch_dict, cwd, tag=None):
                 tmp = sep_chains[ch].copy()
                 tmp.id = oldch
                 newchains.append(tmp)
-            merged = unfold_entities(newchains, "S")[0]
+            merged = fold_entities(newchains, "S")[0]
             write_pdb(merged, cwd / name)
             os.rename(cwd / f"aln_{ids}", cwd / f"old_{name}")
         else:
@@ -227,14 +227,12 @@ def forceorder(id_ch_dict, cwd, alph=True, ordlist=[], forordict={}, tag=None):
             else:
                 name = ids
             newstamp = list(sorted(id_ch_dict[ids]))
-            ca = getca_forchains(
-                return_proteins_from_file(cwd / name), newstamp, order=False
-            )
-            sep_chains = {ch.id: ch.copy() for ch in ca.get_chains()}
+            ca =load_structure(cwd / name)
+            sep_chains = {ch.id:ch for ch in ca.get_chains()}
             newchains = []
             for ch in newstamp:
                 newchains.append(sep_chains[ch])
-            merged = unfold_entities(newchains, "S")[0]
+            merged = fold_entities(newchains, "S")[0]
             os.rename(cwd / name, cwd / f"old_{name}")
             write_pdb(merged, cwd / name)
     else:
@@ -244,17 +242,16 @@ def forceorder(id_ch_dict, cwd, alph=True, ordlist=[], forordict={}, tag=None):
             else:
                 name = ids
             newstamp = list(sorted(ords))
-            ca = getca_forchains(
-                return_proteins_from_file(cwd / name), id_ch_dict[ids], order=False
-            )
+            ca =load_structure(cwd / name)
             sep_chains = {
                 ch.id: ch.copy() for ch in ca.get_chains() if ch.id in id_ch_dict[ids]
             }
             newchains = []
             for ind, ch in enumerate(ords):
-                tmp = sep_chains[ch].copy()
+                tmp = sep_chains[ch]
                 tmp.id = newstamp[ind]
+                tmp.set_parent(list(ca.get_models())[0])
                 newchains.append(tmp)
-            merged = unfold_entities(newchains, "S")[0]
+            merged = fold_entities(newchains, "S")[0]
             os.rename(cwd / name, cwd / f"old_{name}")
             write_pdb(merged, cwd / name)
