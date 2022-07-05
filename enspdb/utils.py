@@ -1,7 +1,6 @@
-from copy import copy
-import itertools
 from pathlib import Path
 from typing import Union
+import numpy as np
 from Bio.PDB.Structure import Structure
 from Bio.PDB.Model import Model
 from Bio.PDB.Chain import Chain
@@ -126,3 +125,9 @@ def fold_entities(entity_list, target_level):
                     if len(list(model)) == 0:
                         model.get_parent().detach_child(model.id)
     return list(entity_list)
+
+def get_coords(struct:Union[Structure,Model,Chain,Residue]):
+    """
+    Return the coordinates of an entity as a numpy array
+    """
+    return np.array([atom.get_coord() for atom in struct.get_atoms()])
